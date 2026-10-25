@@ -5,7 +5,8 @@ const isTargetPanel=()=>TARGET_TITLES.has(title());
 const interactiveTarget=el=>!!el?.closest?.('input,textarea,select,button,[contenteditable="true"],.sheet,.shade');
 const token=()=>localStorage.getItem('listell_token');
 const request=async(path,init={})=>{const r=await fetch('/api/'+path,{...init,headers:{'content-type':'application/json',...(token()?{authorization:'Bearer '+token()}:{}),...(init.headers||{})}});const j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.error||'通信エラー');return j};
-const backFromReorder=()=>{const menu=document.querySelector('[data-tab="menu"]');if(!menu)return;menu.click();document.querySelector('[data-panel="manage"]')?.click()};
+const backToManage=()=>{const menu=document.querySelector('[data-tab="menu"]');if(!menu)return;menu.click();document.querySelector('[data-panel="manage"]')?.click()};
+const backFromReorder=backToManage;
 const applyMenuOrder=async()=>{try{const {lists=[]}=await request('lists');const rows=[...document.querySelectorAll('[data-list]')];if(!rows.length)return;const parent=rows[0].parentElement,map=new Map(rows.map(r=>[String(r.dataset.list),r]));lists.forEach(x=>{const row=map.get(String(x.id));if(row)parent.appendChild(row)})}catch{}};
 const delayedLoader=main=>{const timer=setTimeout(()=>{if(main&&!main.querySelector('.panel-loading'))main.insertAdjacentHTML('beforeend','<div class="panel-loading" aria-label="読み込み中"></div>')},120);return()=>{clearTimeout(timer);main?.querySelector('.panel-loading')?.remove()}};
 
@@ -61,5 +62,5 @@ document.head.appendChild(style);
 
 document.addEventListener('touchstart',e=>{if(e.touches.length!==1||!isTargetPanel()||interactiveTarget(e.target))return;const t=e.touches[0];if(t.clientX>32)return;startX=lastX=t.clientX;startY=lastY=t.clientY;tracking=true},{passive:true});
 document.addEventListener('touchmove',e=>{if(!tracking||e.touches.length!==1)return;const t=e.touches[0];lastX=t.clientX;lastY=t.clientY;if(Math.abs(lastY-startY)>Math.abs(lastX-startX)*1.2)tracking=false},{passive:true});
-document.addEventListener('touchend',()=>{if(!tracking)return;tracking=false;const dx=lastX-startX,dy=Math.abs(lastY-startY);if(dx<70||dy>60||dx<dy*1.3)return;if(title()==='リストを並び替え')backFromReorder();else document.querySelector('[data-tab="menu"]')?.click()},{passive:true});
+document.addEventListener('touchend',()=>{if(!tracking)return;tracking=false;const dx=lastX-startX,dy=Math.abs(lastY-startY);if(dx<70||dy>60||dx<dy*1.3)return;const current=title();if(current==='リストを並び替え'||current==='購入履歴')backToManage();else document.querySelector('[data-tab="menu"]')?.click()},{passive:true});
 document.addEventListener('touchcancel',()=>{tracking=false},{passive:true});
