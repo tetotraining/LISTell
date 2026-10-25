@@ -5,7 +5,7 @@ const isTargetPanel=()=>TARGET_TITLES.has(title());
 const interactiveTarget=el=>!!el?.closest?.('input,textarea,select,button,[contenteditable="true"],.sheet,.shade');
 const token=()=>localStorage.getItem('listell_token');
 const request=async(path,init={})=>{const r=await fetch('/api/'+path,{...init,headers:{'content-type':'application/json',...(token()?{authorization:'Bearer '+token()}:{}),...(init.headers||{})}});const j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.error||'通信エラー');return j};
-const backFromReorder=()=>document.querySelector('[data-panel="manage"]')?.click();
+const backFromReorder=async()=>{await window.__listellRefreshLists?.();document.querySelector('[data-panel="manage"]')?.click()};
 
 document.addEventListener('click',async e=>{
   const trigger=e.target?.closest?.('#reorderLists');
@@ -17,7 +17,7 @@ document.addEventListener('click',async e=>{
   try{
     const result=await request('lists'),ids=[...(result.lists||[])];
     let saving=false,pending=false;
-    const save=async()=>{if(saving){pending=true;return}saving=true;try{await request('lists/reorder',{method:'POST',body:JSON.stringify({ids:ids.map(x=>x.id)})})}catch(err){alert(err.message)}finally{saving=false;if(pending){pending=false;save()}}};
+    const save=async()=>{if(saving){pending=true;return}saving=true;try{await request('lists/reorder',{method:'POST',body:JSON.stringify({ids:ids.map(x=>x.id)})});await window.__listellRefreshLists?.()}catch(err){alert(err.message)}finally{saving=false;if(pending){pending=false;save()}}};
     const draw=()=>{
       main.innerHTML=`<header><em>LIST ORDER</em><h1>リストを並び替え</h1></header><section class="card reorder-panel reorder-page">${ids.map((x,i)=>`<div class="reorder-row"><strong>${x.name}</strong><span class="reorder-actions"><button data-up="${i}" ${i===0?'disabled':''}>↑</button><button data-down="${i}" ${i===ids.length-1?'disabled':''}>↓</button></span></div>`).join('')}</section>`;
       main.querySelectorAll('[data-up]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.up);[ids[i-1],ids[i]]=[ids[i],ids[i-1]];navigator.vibrate?.(10);draw();save()});
