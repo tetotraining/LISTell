@@ -2,7 +2,7 @@ import{avatarPicker}from'./avatar-picker.js';
 const api=async(path,body)=>{let token=localStorage.getItem('listell_token'),r=await fetch('/api/'+path,{method:body?'POST':'GET',headers:{'content-type':'application/json',...(token?{authorization:'Bearer '+token}:{})},body:body?JSON.stringify(body):undefined}),j=await r.json();if(!r.ok)throw Error(j.error||'通信エラー');return j};
 const accent=()=>getComputedStyle(document.documentElement).getPropertyValue('--accent').trim()||'#B9F486';
 const isGreen=()=>true,isRed=()=>false,isOrange=()=>false;
-const avatarSrc=icon=>Number(icon)===6?'/avatar-red-6.webp?v=20261025-36':Number(icon)===5?'/avatar-green-5-new.svg':Number(icon)===4?'/avatar-green-4.webp':Number(icon)===3?'/avatar-green-3-fixed.svg?v=20261026-1':`/avatar-green-${icon}.svg`;
+const avatarSrc=icon=>Number(icon)===6?'/avatar-red-6.webp?v=20261025-36':Number(icon)===5?'/avatar-green-5-new.svg':Number(icon)===4?'/avatar-green-4.webp':Number(icon)===3?'/avatar-green-3-fixed.png?v=20261026-2':`/avatar-green-${icon}.svg`;
 const cachedIcon=()=>Math.max(1,Math.min(6,Number(localStorage.getItem('listell_profile_icon'))||1));
 const rememberIcon=icon=>localStorage.setItem('listell_profile_icon',String(Math.max(1,Math.min(6,Number(icon)||1))));
 const showImmediate=(img,icon)=>{if(!img)return;img.src=avatarSrc(icon);img.style.objectFit='contain';img.style.objectPosition='center';img.dataset.source=img.src};
