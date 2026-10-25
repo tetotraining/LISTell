@@ -7,6 +7,7 @@ const token=()=>localStorage.getItem('listell_token');
 const request=async(path,init={})=>{const r=await fetch('/api/'+path,{...init,headers:{'content-type':'application/json',...(token()?{authorization:'Bearer '+token()}:{}),...(init.headers||{})}});const j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.error||'通信エラー');return j};
 const backFromReorder=()=>{const menu=document.querySelector('[data-tab="menu"]');if(!menu)return;menu.click();document.querySelector('[data-panel="manage"]')?.click()};
 const applyMenuOrder=async()=>{try{const {lists=[]}=await request('lists');const rows=[...document.querySelectorAll('[data-list]')];if(!rows.length)return;const parent=rows[0].parentElement,map=new Map(rows.map(r=>[String(r.dataset.list),r]));lists.forEach(x=>{const row=map.get(String(x.id));if(row)parent.appendChild(row)})}catch{}};
+const delayedLoader=main=>{const timer=setTimeout(()=>{if(main&&!main.querySelector('.panel-loading'))main.insertAdjacentHTML('beforeend','<div class="panel-loading" aria-label="読み込み中"></div>')},120);return()=>{clearTimeout(timer);main?.querySelector('.panel-loading')?.remove()}};
 
 document.addEventListener('click',async e=>{
   const trigger=e.target?.closest?.('#reorderLists');
@@ -15,8 +16,10 @@ document.addEventListener('click',async e=>{
   const main=document.querySelector('#app > main, app > main, main');
   if(!main)return;
   main.innerHTML='<header><em>LIST ORDER</em><h1>リストを並び替え</h1></header>';
+  const stopLoader=delayedLoader(main);
   try{
     const result=await request('lists'),ids=[...(result.lists||[])];
+    stopLoader();
     let saving=false,pending=false;
     const save=async()=>{if(saving){pending=true;return}saving=true;try{await request('lists/reorder',{method:'POST',body:JSON.stringify({ids:ids.map(x=>x.id)})})}catch(err){alert(err.message)}finally{saving=false;if(pending){pending=false;save()}}};
     const draw=()=>{
@@ -25,7 +28,7 @@ document.addEventListener('click',async e=>{
       main.querySelectorAll('[data-down]').forEach(b=>b.onclick=()=>{const i=Number(b.dataset.down);[ids[i+1],ids[i]]=[ids[i],ids[i+1]];navigator.vibrate?.(10);draw();save()});
     };
     draw();
-  }catch(err){alert(err.message);backFromReorder()}
+  }catch(err){stopLoader();alert(err.message);backFromReorder()}
 },{capture:true});
 
 document.addEventListener('click',e=>{if(e.target?.closest?.('[data-tab="menu"]'))setTimeout(applyMenuOrder,0)},true);
@@ -37,6 +40,8 @@ document.addEventListener('click',e=>{
   const main=document.querySelector('#app > main, app > main, main');
   if(!main)return;
   main.innerHTML=`<header><em>SETTINGS</em><h1>${title}</h1></header>`;
+  const stopLoader=delayedLoader(main);
+  setTimeout(stopLoader,1500);
 },{capture:true});
 
 const nativeFetch=window.fetch.bind(window),cache=new Map();
@@ -51,7 +56,7 @@ window.fetch=(input,init={})=>{
 };
 
 const style=document.createElement('style');
-style.textContent='.reorder-page{margin-top:18px}.reorder-page .reorder-row{display:flex;align-items:center}.reorder-page .reorder-row>strong{flex:1;min-width:0}.reorder-page .reorder-actions{margin-left:auto;display:flex;gap:8px;flex:0 0 auto}';
+style.textContent='.panel-loading{width:22px;height:22px;margin:32px auto;border:2px solid var(--line,#333);border-top-color:var(--accent,#fff);border-radius:50%;animation:panelLoading .65s linear infinite}@keyframes panelLoading{to{transform:rotate(360deg)}}.reorder-page{margin-top:18px}.reorder-page .reorder-row{display:flex;align-items:center}.reorder-page .reorder-row>strong{flex:1;min-width:0}.reorder-page .reorder-actions{margin-left:auto;display:flex;gap:8px;flex:0 0 auto}';
 document.head.appendChild(style);
 
 document.addEventListener('touchstart',e=>{if(e.touches.length!==1||!isTargetPanel()||interactiveTarget(e.target))return;const t=e.touches[0];if(t.clientX>32)return;startX=lastX=t.clientX;startY=lastY=t.clientY;tracking=true},{passive:true});
