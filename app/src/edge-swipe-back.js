@@ -5,7 +5,7 @@ const isTargetPanel=()=>TARGET_TITLES.has(title());
 const interactiveTarget=el=>!!el?.closest?.('input,textarea,select,button,[contenteditable="true"],.sheet,.shade');
 const token=()=>localStorage.getItem('listell_token');
 const request=async(path,init={})=>{const r=await fetch('/api/'+path,{...init,headers:{'content-type':'application/json',...(token()?{authorization:'Bearer '+token()}:{}),...(init.headers||{})}});const j=await r.json().catch(()=>({}));if(!r.ok)throw Error(j.error||'通信エラー');return j};
-const backFromReorder=()=>{const menu=document.querySelector('[data-tab="menu"]');if(!menu)return;menu.click();setTimeout(()=>document.querySelector('[data-panel="manage"]')?.click(),0)};
+const backFromReorder=()=>{const menu=document.querySelector('[data-tab="menu"]');if(!menu)return;menu.click();document.querySelector('[data-panel="manage"]')?.click()};
 const applyMenuOrder=async()=>{try{const {lists=[]}=await request('lists');const rows=[...document.querySelectorAll('[data-list]')];if(!rows.length)return;const parent=rows[0].parentElement,map=new Map(rows.map(r=>[String(r.dataset.list),r]));lists.forEach(x=>{const row=map.get(String(x.id));if(row)parent.appendChild(row)})}catch{}};
 
 document.addEventListener('click',async e=>{
