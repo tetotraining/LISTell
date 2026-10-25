@@ -1,7 +1,8 @@
-const avatar3Src='/avatar-green-3-fixed.png?v=20261026-4';
-export const avatar3Placeholder=avatar3Src;
-export function avatar3DataUrl(){return Promise.resolve(avatar3Src)}
-export async function setAvatar3(img){if(!img)return;img.src=avatar3Src;img.dataset.source=avatar3Src;img.style.imageRendering='auto';img.style.objectFit='contain';img.style.objectPosition='center'}
-export function hydrateAvatar3(root=document){root?.querySelectorAll?.('img[data-avatar3]').forEach(img=>{if(img.dataset.avatar3Ready==='1'&&img.src.includes('avatar-green-3-fixed.png'))return;img.dataset.avatar3Ready='1';setAvatar3(img)})}
+const parts=['/avatar-green-3-hq-part00.txt?v=20261026-6','/avatar-green-3-hq-part01.txt?v=20261026-6','/avatar-green-3-hq-part02.txt?v=20261026-6'];
+export const avatar3Placeholder='/avatar-green-3.svg?v=20261026-6';
+let dataPromise=null;
+export function avatar3DataUrl(){if(!dataPromise)dataPromise=Promise.all(parts.map(async u=>{const r=await fetch(u,{cache:'no-store'});if(!r.ok)throw Error(`avatar3 ${r.status}`);return(await r.text()).trim()})).then(p=>'data:image/jpeg;base64,'+p.join(''));return dataPromise}
+export async function setAvatar3(img){if(!img)return;img.src=avatar3Placeholder;img.style.imageRendering='auto';img.style.objectFit='contain';img.style.objectPosition='center';try{const src=await avatar3DataUrl();if(!img.isConnected)return;img.src=src;img.dataset.source=src}catch(e){console.error('avatar 3 load failed',e);img.src=avatar3Placeholder;img.dataset.source=avatar3Placeholder}}
+export function hydrateAvatar3(root=document){root?.querySelectorAll?.('img[data-avatar3]').forEach(img=>{if(img.dataset.avatar3Ready==='1')return;img.dataset.avatar3Ready='1';setAvatar3(img)})}
 new MutationObserver(()=>hydrateAvatar3()).observe(document.documentElement,{childList:true,subtree:true});
 hydrateAvatar3();
