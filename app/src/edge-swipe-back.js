@@ -1,4 +1,4 @@
-const TARGET_TITLES=new Set(['リスト管理','共有設定','デザイン設定','通知設定']);
+const TARGET_TITLES=new Set(['リスト管理','共有設定','デザイン設定','通知設定','購入履歴']);
 let startX=0,startY=0,lastX=0,lastY=0,tracking=false;
 const isTargetPanel=()=>TARGET_TITLES.has(document.querySelector('main header h1')?.textContent?.trim());
 const interactiveTarget=el=>!!el?.closest?.('input,textarea,select,button,[contenteditable="true"],.sheet,.shade');
