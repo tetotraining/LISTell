@@ -2,6 +2,7 @@ import './viewer-guard.js';
 import './push-client.js';
 import './edge-swipe-back.js';
 import './password-eye.js';
+import './list-icon-swipe.js';
 export const labels={product_added:'商品追加',product_changed:'商品詳細変更',product_purchased:'購入済み',product_restored:'リストに戻す',product_deleted:'商品削除',list_deleted:'リスト削除',list_renamed:'リスト名変更',member_joined:'メンバー参加',member_removed:'メンバー削除',role_changed:'権限変更'};
 export const page=(title,body)=>`<header><em>SETTINGS</em><h1>${title}</h1></header>${body}`;
 const dt=v=>{let d=new Date(v);return`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`};
