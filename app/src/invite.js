@@ -5,7 +5,7 @@ const esc=s=>String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;'
 export async function showInviteSheet(link,expiresAt=Date.now()+300000){
   document.querySelector('#inviteShade')?.remove();
   const qr=await QRCode.toDataURL(link,{width:240,margin:1,errorCorrectionLevel:'M'});
-  document.body.insertAdjacentHTML('beforeend',`<div class="shade" id="inviteShade"><section class="sheet invite-sheet"><div class="handle"></div><button id="inviteClose">閉じる</button><em>INVITE</em><h1>リストへ招待</h1><p class="invite-expiry">有効期限 <strong id="inviteCountdown">5:00</strong></p><div class="invite-qr"><img src="${qr}" alt="招待QRコード" width="240" height="240"></div><div class="invite-link" id="inviteLink">${esc(link)}</div><button class="primary" id="inviteCopy">URLをコピー</button><p class="invite-note">QRコードまたはURLを共有してください</p></section></div>`);
+  document.body.insertAdjacentHTML('beforeend',`<div class="shade" id="inviteShade"><section class="sheet invite-sheet"><div class="handle"></div><button id="inviteClose" style="color:var(--accent)">キャンセル</button><em>INVITE</em><h1>リストへ招待</h1><p class="invite-expiry">有効期限 <strong id="inviteCountdown">5:00</strong></p><div class="invite-qr"><img src="${qr}" alt="招待QRコード" width="240" height="240"></div><div class="invite-link" id="inviteLink">${esc(link)}</div><button class="primary" id="inviteCopy">URLをコピー</button><p class="invite-note">QRコードまたはURLを共有してください</p></section></div>`);
   const shade=document.querySelector('#inviteShade'),close=document.querySelector('#inviteClose'),copy=document.querySelector('#inviteCopy'),count=document.querySelector('#inviteCountdown');
   let timer;
   const stop=()=>{clearInterval(timer);shade?.remove()};
