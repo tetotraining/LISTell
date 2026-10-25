@@ -1,0 +1,5 @@
+const close=()=>document.querySelector('#listIconShade')?.remove();
+function bind(shade){if(!shade||shade.dataset.swipeDownClose==='1')return;shade.dataset.swipeDownClose='1';const sheet=shade.querySelector('.sheet');if(!sheet)return;let startY=0,startX=0,lastY=0,lastX=0,tracking=false;sheet.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;const t=e.touches[0];startY=lastY=t.clientY;startX=lastX=t.clientX;tracking=true},{passive:true});sheet.addEventListener('touchmove',e=>{if(!tracking||e.touches.length!==1)return;const t=e.touches[0];lastY=t.clientY;lastX=t.clientX;if(Math.abs(lastX-startX)>Math.abs(lastY-startY)*1.2)tracking=false},{passive:true});sheet.addEventListener('touchend',()=>{if(!tracking)return;tracking=false;const dy=lastY-startY,dx=Math.abs(lastX-startX);if(dy>=70&&dy>dx*1.2)close()},{passive:true});sheet.addEventListener('touchcancel',()=>{tracking=false},{passive:true})}
+const hydrate=()=>bind(document.querySelector('#listIconShade'));
+new MutationObserver(hydrate).observe(document.documentElement,{childList:true,subtree:true});
+hydrate();
