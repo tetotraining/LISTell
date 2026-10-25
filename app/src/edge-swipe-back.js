@@ -14,7 +14,7 @@ document.addEventListener('click',async e=>{
   e.preventDefault();e.stopImmediatePropagation();
   const main=document.querySelector('#app > main, app > main, main');
   if(!main)return;
-  main.innerHTML='<header><em>LIST ORDER</em><h1>リストを並び替え</h1></header><div class="panel-loading" aria-label="読み込み中"></div>';
+  main.innerHTML='<header><em>LIST ORDER</em><h1>リストを並び替え</h1></header>';
   try{
     const result=await request('lists'),ids=[...(result.lists||[])];
     let saving=false,pending=false;
@@ -36,7 +36,7 @@ document.addEventListener('click',e=>{
   const panel=trigger.dataset.panel,title=panel==='sharing'?'共有設定':'通知設定';
   const main=document.querySelector('#app > main, app > main, main');
   if(!main)return;
-  main.innerHTML=`<header><em>SETTINGS</em><h1>${title}</h1></header><div class="panel-loading" aria-label="読み込み中"></div>`;
+  main.innerHTML=`<header><em>SETTINGS</em><h1>${title}</h1></header>`;
 },{capture:true});
 
 const nativeFetch=window.fetch.bind(window),cache=new Map();
@@ -51,7 +51,7 @@ window.fetch=(input,init={})=>{
 };
 
 const style=document.createElement('style');
-style.textContent='.panel-loading{width:22px;height:22px;margin:32px auto;border:2px solid var(--line,#333);border-top-color:var(--accent,#fff);border-radius:50%;animation:panelLoading .65s linear infinite}@keyframes panelLoading{to{transform:rotate(360deg)}}.reorder-page{margin-top:18px}.reorder-page .reorder-row{display:flex;align-items:center}.reorder-page .reorder-row>strong{flex:1;min-width:0}.reorder-page .reorder-actions{margin-left:auto;display:flex;gap:8px;flex:0 0 auto}';
+style.textContent='.reorder-page{margin-top:18px}.reorder-page .reorder-row{display:flex;align-items:center}.reorder-page .reorder-row>strong{flex:1;min-width:0}.reorder-page .reorder-actions{margin-left:auto;display:flex;gap:8px;flex:0 0 auto}';
 document.head.appendChild(style);
 
 document.addEventListener('touchstart',e=>{if(e.touches.length!==1||!isTargetPanel()||interactiveTarget(e.target))return;const t=e.touches[0];if(t.clientX>32)return;startX=lastX=t.clientX;startY=lastY=t.clientY;tracking=true},{passive:true});
