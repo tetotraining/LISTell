@@ -1,0 +1,1 @@
+document.addEventListener('click',e=>{const row=e.target?.closest?.('[data-list]');if(!row)return;const card=row.parentElement;if(!card)return;card.querySelectorAll(':scope > [data-list] > b').forEach(b=>b.remove());if(!row.querySelector(':scope > b'))row.insertAdjacentHTML('beforeend','<b>✓</b>');navigator.vibrate?.(6)},{capture:true});
