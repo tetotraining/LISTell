@@ -76,7 +76,7 @@ function showRecoverySuccess(code){
           copyButton.textContent='復旧コードをコピー';
           copyButton.classList.remove('copied');
           copyResetTimer=null;
-        },5000);
+        },2000);
       }
     };
     shade.querySelector('#recoveryOpenButton').onclick=()=>{
