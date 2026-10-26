@@ -22,8 +22,9 @@ function ensureRecoveryModalStyle(){
     .recovery-success-modal p{margin:10px 0 22px;color:var(--muted,#9b9b9b);font-size:14px;line-height:1.55}
     .recovery-code-box{display:flex;align-items:center;justify-content:center;min-height:62px;padding:0 14px;margin:0 0 12px;border-radius:18px;background:#080a08;border:1px solid rgba(255,255,255,.12);color:var(--text,#fff);font-size:20px;font-weight:800;letter-spacing:1.8px;word-break:break-all;user-select:all;-webkit-user-select:all}
     .recovery-copy-button,.recovery-open-button{width:100%;height:54px;border:0;border-radius:17px;font:inherit;font-size:16px;font-weight:800}
-    .recovery-copy-button{margin-bottom:10px;background:#252525;color:#fff}
+    .recovery-copy-button{margin-bottom:10px;background:#252525;color:#fff;opacity:1;transition:opacity .18s ease}
     .recovery-copy-button.copied{color:var(--accent)}
+    .recovery-copy-button.fade-reset{opacity:0}
     .recovery-open-button{background:var(--accent);color:#000}
     html[data-theme="light"] .recovery-success-shade{background:rgba(0,0,0,.38)}
     html[data-theme="light"] .recovery-success-modal{background:#fff;border-color:rgba(0,0,0,.1)}
@@ -64,8 +65,11 @@ function showRecoverySuccess(code){
     document.body.appendChild(shade);
     const copyButton=shade.querySelector('#recoveryCopyButton');
     let copyResetTimer=null;
+    let copyFadeTimer=null;
     copyButton.onclick=async()=>{
       if(copyResetTimer){clearTimeout(copyResetTimer);copyResetTimer=null}
+      if(copyFadeTimer){clearTimeout(copyFadeTimer);copyFadeTimer=null}
+      copyButton.classList.remove('fade-reset');
       const ok=await copyText(code);
       copyButton.textContent=ok?'コピーしました ✓':'コピーできませんでした';
       copyButton.classList.toggle('copied',ok);
@@ -73,14 +77,23 @@ function showRecoverySuccess(code){
         navigator.vibrate?.(10);
         copyResetTimer=setTimeout(()=>{
           if(!copyButton.isConnected)return;
-          copyButton.textContent='復旧コードをコピー';
-          copyButton.classList.remove('copied');
+          copyButton.classList.add('fade-reset');
+          copyFadeTimer=setTimeout(()=>{
+            if(!copyButton.isConnected)return;
+            copyButton.textContent='復旧コードをコピー';
+            copyButton.classList.remove('copied');
+            requestAnimationFrame(()=>{
+              if(copyButton.isConnected)copyButton.classList.remove('fade-reset');
+            });
+            copyFadeTimer=null;
+          },180);
           copyResetTimer=null;
         },2000);
       }
     };
     shade.querySelector('#recoveryOpenButton').onclick=()=>{
       if(copyResetTimer)clearTimeout(copyResetTimer);
+      if(copyFadeTimer)clearTimeout(copyFadeTimer);
       shade.remove();
       resolve();
     };
