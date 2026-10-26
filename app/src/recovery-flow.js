@@ -55,8 +55,9 @@ function showPasswordStep(message=''){
       const newCode=data.recoveryCode||'';
       recoveryCode='';
       recoveryLoginId='';
-      restoreLogin();
       alert('パスワードを変更しました。\n新しい復旧コード：'+newCode+'\n必ず保管してください');
+      if(typeof window.__listellCompleteRecovery!=='function')throw Error('ログイン処理を開始できませんでした');
+      await window.__listellCompleteRecovery(data);
     }catch(error){
       showPasswordStep(error.message);
     }
