@@ -1,0 +1,7 @@
+nav button[data-tab="add"]{color:var(--accent)}
+nav button[data-tab="add"] b{position:relative;display:grid;place-items:center;width:31px;height:31px;border:2px solid currentColor;border-radius:50%;font-size:0;line-height:1;background:color-mix(in srgb,var(--accent) 8%,transparent)}
+nav button[data-tab="add"] b::before,nav button[data-tab="add"] b::after{content:"";position:absolute;left:50%;top:50%;border-radius:999px;background:currentColor;transform:translate(-50%,-50%)}
+nav button[data-tab="add"] b::before{width:13px;height:2px}
+nav button[data-tab="add"] b::after{width:2px;height:13px}
+nav button[data-tab="add"] span{color:var(--accent);font-weight:600}
+nav button[data-tab="add"]:disabled{opacity:.4}
