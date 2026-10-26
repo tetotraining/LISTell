@@ -29,10 +29,11 @@ function enhanceRecoveryCard(card){
   actions.className='recovery-card-actions';
   const copy=document.createElement('button');
   copy.type='button';
-  copy.className='link recovery-card-copy';
+  copy.className='recovery-card-action recovery-card-copy';
   copy.textContent='復旧コードをコピー';
+  regenerate.classList.add('recovery-card-action','recovery-card-regenerate');
   regenerate.before(actions);
-  actions.append(copy,regenerate);
+  actions.append(regenerate,copy);
 
   let resetTimer=null;
   let fadeTimer=null;
@@ -69,8 +70,11 @@ enhance();
 
 const style=document.createElement('style');
 style.textContent=`
-.recovery-card-actions{display:flex;align-items:center;gap:8px;flex-wrap:wrap}
-.recovery-card-actions .link{margin:0!important}
+.recovery-card-actions{display:flex;align-items:center;gap:10px;width:100%;margin-top:10px}
+.recovery-card-action{flex:1;min-width:0;height:46px;margin:0!important;padding:0 10px!important;border:1px solid rgba(255,255,255,.2)!important;border-radius:14px!important;background:#202020!important;color:#fff!important;font:inherit!important;font-size:14px!important;font-weight:750!important;display:flex!important;align-items:center!important;justify-content:center!important;box-sizing:border-box!important;white-space:nowrap!important}
+.recovery-card-copy{border-color:color-mix(in srgb,var(--accent) 60%,rgba(255,255,255,.18))!important}
 .recovery-card-copy.copied{color:var(--accent)!important}
+html[data-theme="light"] .recovery-card-action{background:#f3f3f3!important;color:#111!important;border-color:rgba(0,0,0,.14)!important}
+html[data-theme="light"] .recovery-card-copy{border-color:color-mix(in srgb,var(--accent) 70%,rgba(0,0,0,.12))!important}
 `;
 document.head.appendChild(style);
