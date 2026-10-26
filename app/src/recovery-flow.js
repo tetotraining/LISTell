@@ -63,13 +63,24 @@ function showRecoverySuccess(code){
     shade.innerHTML=`<section class="recovery-success-modal" role="dialog" aria-modal="true" aria-labelledby="recoverySuccessTitle"><div class="recovery-success-icon">✓</div><h2 id="recoverySuccessTitle">パスワードを変更しました</h2><p>新しい復旧コードです。<br>次回ログインできない時のために保管してください。</p><div class="recovery-code-box" id="recoverySuccessCode">${code}</div><button type="button" class="recovery-copy-button" id="recoveryCopyButton">復旧コードをコピー</button><button type="button" class="recovery-open-button" id="recoveryOpenButton">LISTellを開く</button></section>`;
     document.body.appendChild(shade);
     const copyButton=shade.querySelector('#recoveryCopyButton');
+    let copyResetTimer=null;
     copyButton.onclick=async()=>{
+      if(copyResetTimer){clearTimeout(copyResetTimer);copyResetTimer=null}
       const ok=await copyText(code);
       copyButton.textContent=ok?'コピーしました ✓':'コピーできませんでした';
       copyButton.classList.toggle('copied',ok);
-      if(ok)navigator.vibrate?.(10);
+      if(ok){
+        navigator.vibrate?.(10);
+        copyResetTimer=setTimeout(()=>{
+          if(!copyButton.isConnected)return;
+          copyButton.textContent='復旧コードをコピー';
+          copyButton.classList.remove('copied');
+          copyResetTimer=null;
+        },5000);
+      }
     };
     shade.querySelector('#recoveryOpenButton').onclick=()=>{
+      if(copyResetTimer)clearTimeout(copyResetTimer);
       shade.remove();
       resolve();
     };
