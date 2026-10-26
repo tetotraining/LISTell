@@ -54,14 +54,17 @@ async function copyText(text){
   }catch{return false}
 }
 
-function showRecoverySuccess(code){
+function showRecoverySuccess(code,options={}){
+  const title=options.title||'パスワードを変更しました';
+  const message=options.message||'新しい復旧コードです。<br>次回ログインできない時のために保管してください。';
+  const actionLabel=options.actionLabel||'LISTellを開く';
   ensureRecoveryModalStyle();
   return new Promise(resolve=>{
     document.querySelector('#recoverySuccessShade')?.remove();
     const shade=document.createElement('div');
     shade.className='recovery-success-shade';
     shade.id='recoverySuccessShade';
-    shade.innerHTML=`<section class="recovery-success-modal" role="dialog" aria-modal="true" aria-labelledby="recoverySuccessTitle"><div class="recovery-success-icon">✓</div><h2 id="recoverySuccessTitle">パスワードを変更しました</h2><p>新しい復旧コードです。<br>次回ログインできない時のために保管してください。</p><div class="recovery-code-box" id="recoverySuccessCode">${code}</div><button type="button" class="recovery-copy-button" id="recoveryCopyButton">復旧コードをコピー</button><button type="button" class="recovery-open-button" id="recoveryOpenButton">LISTellを開く</button></section>`;
+    shade.innerHTML=`<section class="recovery-success-modal" role="dialog" aria-modal="true" aria-labelledby="recoverySuccessTitle"><div class="recovery-success-icon">✓</div><h2 id="recoverySuccessTitle">${title}</h2><p>${message}</p><div class="recovery-code-box" id="recoverySuccessCode">${code}</div><button type="button" class="recovery-copy-button" id="recoveryCopyButton">復旧コードをコピー</button><button type="button" class="recovery-open-button" id="recoveryOpenButton">${actionLabel}</button></section>`;
     document.body.appendChild(shade);
     const copyButton=shade.querySelector('#recoveryCopyButton');
     let copyResetTimer=null;
@@ -99,6 +102,8 @@ function showRecoverySuccess(code){
     };
   });
 }
+
+window.__listellShowRecoverySuccess=(code,options={})=>showRecoverySuccess(code,options);
 
 function showCodeStep(message=''){
   const root=app();
