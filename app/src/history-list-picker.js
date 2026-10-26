@@ -14,16 +14,20 @@ const icons=[
 ];
 const iconSvg=n=>icons[Math.max(0,Math.min(icons.length-1,Number(n||1)-1))];
 const close=()=>document.querySelector('#historyListShade')?.remove();
+const historyCache=new Map();
+const prefetch=lists=>{for(const list of lists){const id=String(list.id);if(historyCache.has(id))continue;const pending=request(`lists/${id}/history`).catch(error=>{historyCache.delete(id);throw error});historyCache.set(id,pending)}};
 async function openHistoryForList(id){
   if(typeof window.__listellOpenHistoryForList!=='function')throw Error('購入履歴を開けませんでした');
   sessionStorage.setItem('listell_selected_list_id',String(id));
-  await window.__listellOpenHistoryForList(id);
+  await window.__listellOpenHistoryForList(id,historyCache.get(String(id)));
   close();
 }
 async function openPicker(){
   close();
   try{
-    const {lists=[]}=await request('lists');
+    const cachedLists=typeof window.__listellHistoryLists==='function'?window.__listellHistoryLists():[];
+    const lists=cachedLists.length?cachedLists:(await request('lists')).lists||[];
+    prefetch(lists);
     document.body.insertAdjacentHTML('beforeend',`<div class="shade" id="historyListShade"><section class="sheet list-icon-sheet"><div class="handle"></div><button type="button" class="dialog-cancel" id="historyListCancel">キャンセル</button><em>PURCHASE HISTORY</em><h1>購入履歴を見るリストを選択</h1><div class="icon-list-choice">${lists.map(x=>`<button type="button" data-history-list="${x.id}"><span class="custom-list-icon">${iconSvg(localStorage.getItem(iconKey(x.id))||1)}</span><strong>${x.name}</strong><b>›</b></button>`).join('')}</div></section></div>`);
     const shade=document.querySelector('#historyListShade'),sheet=shade.querySelector('.sheet');
     shade.querySelector('#historyListCancel').onclick=close;
