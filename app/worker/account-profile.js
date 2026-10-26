@@ -1,1 +1,22 @@
-const J={headers:{'content-type':'application/json;charset=UTF-8'}};const out=(v,s=200)=>new Response(JSON.stringify(v),{...J,status:s});const enc=new TextEncoder();const b64=b=>btoa(String.fromCharCode(...new Uint8Array(b))).replaceAll('+','-').replaceAll('/','_').replaceAll('=','');const bytes=n=>crypto.getRandomValues(new Uint8Array(n));async function sha(v){return b64(await crypto.subtle.digest('SHA-256',enc.encode(v)))}const code=()=>Array.from(bytes(12),x=>'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'[x%32]).join('');async function issue(db,userId){await db.prepare('DELETE FROM recovery_codes WHERE user_id=?').bind(userId).run();let c=code();await db.batch([db.prepare('INSERT INTO recovery_codes VALUES(?,?,NULL,?)').bind(await sha(c),userId,Date.now()),db.prepare('UPDATE users SET recovery_code_display=? WHERE id=?').bind(c,userId)]);return c}export async function accountProfileApi(req,env,u,url,body={}){let db=env.DB;if(url.pathname==='/api/account'&&req.method==='GET'){let x=await db.prepare('SELECT nickname,login_id,profile_icon,recovery_code_display FROM users WHERE id=?').bind(u.id).first();if(!x)return out({error:'アカウントが見つかりません'},404);let recoveryCode=x.recovery_code_display,valid=null;if(recoveryCode)valid=await db.prepare('SELECT 1 ok FROM recovery_codes WHERE user_id=? AND code_hash=? AND used_at IS NULL LIMIT 1').bind(u.id,await sha(recoveryCode)).first();if(!recoveryCode||!valid)recoveryCode=await issue(db,u.id);return out({user:{id:u.id,nickname:x.nickname,loginId:x.login_id,profileIcon:Number(x.profile_icon)||1,recoveryCode}})}if(url.pathname==='/api/account/profile-icon'&&req.method==='POST'){let icon=Number(body.profileIcon);if(!Number.isInteger(icon)||icon<1||icon>6)return out({error:'アイコンが不正です'},400);await db.prepare('UPDATE users SET profile_icon=? WHERE id=?').bind(icon,u.id).run();return out({ok:true,profileIcon:icon})}if(url.pathname==='/api/account/recovery/regenerate'&&req.method==='POST')return out({recoveryCode:await issue(db,u.id)});return null}
+import{issueRecoveryCode,syncRecoveryRecord}from'./recovery.js';
+const J={headers:{'content-type':'application/json;charset=UTF-8'}};
+const out=(v,s=200)=>new Response(JSON.stringify(v),{...J,status:s});
+export async function accountProfileApi(req,env,u,url,body={}){
+  const db=env.DB;
+  if(url.pathname==='/api/account'&&req.method==='GET'){
+    const x=await db.prepare('SELECT nickname,login_id,profile_icon,recovery_code_display FROM users WHERE id=?').bind(u.id).first();
+    if(!x)return out({error:'アカウントが見つかりません'},404);
+    let recoveryCode=x.recovery_code_display;
+    if(!recoveryCode)recoveryCode=await issueRecoveryCode(db,u.id);
+    else await syncRecoveryRecord(db,u.id,recoveryCode);
+    return out({user:{id:u.id,nickname:x.nickname,loginId:x.login_id,profileIcon:Number(x.profile_icon)||1,recoveryCode}});
+  }
+  if(url.pathname==='/api/account/profile-icon'&&req.method==='POST'){
+    const icon=Number(body.profileIcon);
+    if(!Number.isInteger(icon)||icon<1||icon>6)return out({error:'アイコンが不正です'},400);
+    await db.prepare('UPDATE users SET profile_icon=? WHERE id=?').bind(icon,u.id).run();
+    return out({ok:true,profileIcon:icon});
+  }
+  if(url.pathname==='/api/account/recovery/regenerate'&&req.method==='POST')return out({recoveryCode:await issueRecoveryCode(db,u.id)});
+  return null;
+}
