@@ -18,6 +18,18 @@ async function copyText(text){
   }catch{return false}
 }
 
+async function regenerateRecoveryCode(){
+  const token=localStorage.getItem('listell_token');
+  const response=await fetch('/api/account/recovery/regenerate',{
+    method:'POST',
+    headers:{'content-type':'application/json',...(token?{authorization:'Bearer '+token}:{})},
+    body:'{}'
+  });
+  const data=await response.json().catch(()=>({}));
+  if(!response.ok)throw Error(data.error||'復旧コードの再発行に失敗しました');
+  return data.recoveryCode||'';
+}
+
 function enhanceRecoveryCard(card){
   if(!card||card.dataset.copyReady==='1')return;
   const code=card.querySelector('.recovery-code');
@@ -67,6 +79,31 @@ function enhanceRecoveryCard(card){
 function enhance(){document.querySelectorAll('.recovery-card').forEach(enhanceRecoveryCard)}
 new MutationObserver(enhance).observe(document.documentElement,{childList:true,subtree:true});
 enhance();
+
+document.addEventListener('click',async event=>{
+  const button=event.target.closest?.('#regenerateRecovery');
+  if(!button)return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  if(!confirm('現在の復旧コードを無効にして、新しいコードを発行しますか？'))return;
+  button.disabled=true;
+  try{
+    const newCode=await regenerateRecoveryCode();
+    const code=document.querySelector('.recovery-code');
+    if(code)code.textContent=newCode;
+    if(typeof window.__listellShowRecoverySuccess==='function'){
+      await window.__listellShowRecoverySuccess(newCode,{
+        title:'復旧コードを再発行しました',
+        message:'新しい復旧コードです。<br>次回ログインできない時のために保管してください。',
+        actionLabel:'閉じる'
+      });
+    }
+  }catch(error){
+    alert(error.message);
+  }finally{
+    if(button.isConnected)button.disabled=false;
+  }
+},{capture:true});
 
 const style=document.createElement('style');
 style.textContent=`
