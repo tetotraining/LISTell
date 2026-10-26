@@ -14,21 +14,10 @@ const icons=[
 ];
 const iconSvg=n=>icons[Math.max(0,Math.min(icons.length-1,Number(n||1)-1))];
 const close=()=>document.querySelector('#historyListShade')?.remove();
-const waitFor=(fn,timeout=3000)=>new Promise((resolve,reject)=>{const found=fn();if(found)return resolve(found);const obs=new MutationObserver(()=>{const value=fn();if(value){clearTimeout(timer);obs.disconnect();resolve(value)}});obs.observe(document.documentElement,{childList:true,subtree:true});const timer=setTimeout(()=>{obs.disconnect();reject(Error('画面の切り替えに失敗しました'))},timeout)});
-let bypass=false;
 async function openHistoryForList(id){
-  const {lists=[]}=await request('lists');
-  const selected=lists.find(x=>String(x.id)===String(id));
-  if(!selected)throw Error('リストが見つかりません');
-  if(typeof window.__listellSelectNewList!=='function')throw Error('リストを切り替えられませんでした');
+  if(typeof window.__listellOpenHistoryForList!=='function')throw Error('購入履歴を開けませんでした');
   sessionStorage.setItem('listell_selected_list_id',String(id));
-  await window.__listellSelectNewList(selected);
-  const manage=await waitFor(()=>document.querySelector('[data-panel="manage"]'));
-  manage.click();
-  const history=await waitFor(()=>document.querySelector('#listManagementCard [data-panel="history"]'));
-  bypass=true;
-  history.click();
-  await waitFor(()=>document.querySelector('#app main h1')?.textContent?.trim()==='購入履歴');
+  await window.__listellOpenHistoryForList(id);
   close();
 }
 async function openPicker(){
@@ -50,7 +39,6 @@ async function openPicker(){
 document.addEventListener('click',event=>{
   const history=event.target.closest('#listManagementCard [data-panel="history"]');
   if(!history)return;
-  if(bypass){bypass=false;return}
   event.preventDefault();
   event.stopImmediatePropagation();
   openPicker();
