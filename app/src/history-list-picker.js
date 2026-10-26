@@ -17,13 +17,12 @@ const close=()=>document.querySelector('#historyListShade')?.remove();
 const waitFor=(fn,timeout=3000)=>new Promise((resolve,reject)=>{const found=fn();if(found)return resolve(found);const obs=new MutationObserver(()=>{const value=fn();if(value){clearTimeout(timer);obs.disconnect();resolve(value)}});obs.observe(document.documentElement,{childList:true,subtree:true});const timer=setTimeout(()=>{obs.disconnect();reject(Error('画面の切り替えに失敗しました'))},timeout)});
 let bypass=false;
 async function openHistoryForList(id){
+  const {lists=[]}=await request('lists');
+  const selected=lists.find(x=>String(x.id)===String(id));
+  if(!selected)throw Error('リストが見つかりません');
+  if(typeof window.__listellSelectNewList!=='function')throw Error('リストを切り替えられませんでした');
   sessionStorage.setItem('listell_selected_list_id',String(id));
-  const menu=document.querySelector('nav [data-tab="menu"]');
-  if(!menu)throw Error('メニューを開けませんでした');
-  menu.click();
-  const listRow=await waitFor(()=>document.querySelector(`[data-list="${CSS.escape(String(id))}"]`));
-  listRow.click();
-  await waitFor(()=>{const row=document.querySelector(`[data-list="${CSS.escape(String(id))}"]`);return row?.querySelector(':scope > b')?.textContent?.includes('✓')?row:null});
+  await window.__listellSelectNewList(selected);
   const manage=await waitFor(()=>document.querySelector('[data-panel="manage"]'));
   manage.click();
   const history=await waitFor(()=>document.querySelector('#listManagementCard [data-panel="history"]'));
