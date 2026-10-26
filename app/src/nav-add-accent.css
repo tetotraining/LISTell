@@ -1,5 +1,5 @@
-nav button[data-tab="add"]{color:var(--accent)}
-nav button[data-tab="add"] b{position:relative;display:grid;place-items:center;width:38px;height:38px;border:2.5px solid currentColor;border-radius:50%;font-size:0;line-height:1;background:color-mix(in srgb,var(--accent) 8%,transparent)}
+nav button[data-tab="add"]{position:relative;color:var(--accent);overflow:visible}
+nav button[data-tab="add"] b{position:relative;top:-27px;z-index:2;display:grid;place-items:center;width:38px;height:38px;border:2.5px solid currentColor;border-radius:50%;font-size:0;line-height:1;background:var(--surface);box-shadow:0 0 0 4px var(--surface)}
 nav button[data-tab="add"] b::before,nav button[data-tab="add"] b::after{content:"";position:absolute;left:50%;top:50%;border-radius:999px;background:currentColor;transform:translate(-50%,-50%)}
 nav button[data-tab="add"] b::before{width:16px;height:2.5px}
 nav button[data-tab="add"] b::after{width:2.5px;height:16px}
