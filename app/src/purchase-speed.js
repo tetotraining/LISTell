@@ -19,7 +19,13 @@ function normalizeMixedPriorityRows(){
   if(!main)return;
   const direct=main.querySelector(':scope > .rows');
   if(!direct||!main.querySelector(':scope > .priority-group'))return;
-  [...direct.querySelectorAll(':scope > .row')].forEach(row=>{const key=rowKey(row);if(!key)return;ensureGroup(main,key).querySelector('.rows')?.appendChild(row)});
+  [...direct.querySelectorAll(':scope > .row')].forEach(row=>{
+    const key=rowKey(row);if(!key)return;
+    const box=ensureGroup(main,key).querySelector('.rows');
+    if(!box)return;
+    const optimistic=box.querySelector(':scope > .row.optimistic');
+    if(optimistic)box.insertBefore(row,optimistic);else box.appendChild(row);
+  });
   if(!direct.querySelector(':scope > .row'))direct.remove();
 }
 const app=document.querySelector('#app');
