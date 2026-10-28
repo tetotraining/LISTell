@@ -5,7 +5,7 @@ import './password-eye.js';
 import './list-icon-swipe.js';
 import './smooth-list-switch.js';
 import{avatar3Placeholder}from'./avatar3-loader.js';
-export const labels={product_added:'商品追加',product_changed:'商品詳細変更',product_purchased:'購入済み',product_restored:'リストに戻す',product_deleted:'商品削除',list_deleted:'リスト削除',list_renamed:'リスト名変更',member_joined:'メンバー参加',member_removed:'メンバー削除',role_changed:'権限変更'};
+export const labels={product_added:'商品追加',product_name_changed:'商品名変更',product_priority_changed:'優先度変更',product_name_priority_changed:'商品名/優先度変更',product_purchased:'購入済',product_restored:'リストに戻す',product_deleted:'商品削除',list_deleted:'リスト削除',list_renamed:'リスト名変更',member_joined:'メンバー参加',member_removed:'メンバー削除',role_changed:'権限変更'};
 export const page=(title,body)=>`<header><em>SETTINGS</em><h1>${title}</h1></header>${body}`;
 const dt=v=>{let d=new Date(v);return`${d.getFullYear()}/${String(d.getMonth()+1).padStart(2,'0')}/${String(d.getDate()).padStart(2,'0')}`};
 const memberAvatar=icon=>{icon=Math.max(1,Math.min(6,Number(icon)||1));return icon===3?avatar3Placeholder:icon===6?'/avatar-red-6.webp?v=20261025-36':icon===5?'/avatar-green-5-new.svg':icon===4?'/avatar-green-4.webp':`/avatar-green-${icon}.svg`};
