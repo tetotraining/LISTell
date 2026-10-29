@@ -18,6 +18,63 @@ function paint(sheet){
 
 function closeSheet(){document.querySelector('#shade')?.remove()}
 
+function bindDragToClose(shade,sheet){
+  let startX=0,startY=0,lastX=0,lastY=0,tracking=false,mode=null,edgeStart=false,closing=false;
+  const EDGE=34,LOCK=8,CLOSE_Y=110;
+  const clearTransition=()=>{sheet.style.transition='none'};
+  const reset=()=>{sheet.style.transition='transform .24s cubic-bezier(.22,.72,.24,1)';sheet.style.transform='translate3d(0,0,0)'};
+  const finishClose=(axis,distance)=>{
+    if(closing)return;
+    closing=true;
+    sheet.style.transition='transform .22s cubic-bezier(.4,0,1,1)';
+    sheet.style.transform=axis==='x'?`translate3d(${distance}px,0,0)`:`translate3d(0,${distance}px,0)`;
+    shade.style.transition='opacity .22s ease';
+    shade.style.opacity='0';
+    const done=()=>closeSheet();
+    sheet.addEventListener('transitionend',done,{once:true});
+    setTimeout(done,260);
+  };
+  sheet.addEventListener('touchstart',e=>{
+    if(closing||e.touches.length!==1)return;
+    const t=e.touches[0];
+    startX=lastX=t.clientX;
+    startY=lastY=t.clientY;
+    edgeStart=startX<=EDGE;
+    tracking=true;
+    mode=null;
+    clearTransition();
+  },{passive:true});
+  sheet.addEventListener('touchmove',e=>{
+    if(!tracking||closing||e.touches.length!==1)return;
+    const t=e.touches[0];
+    lastX=t.clientX;
+    lastY=t.clientY;
+    const dx=lastX-startX,dy=lastY-startY,ax=Math.abs(dx),ay=Math.abs(dy);
+    if(!mode){
+      if(edgeStart&&dx>LOCK&&ax>ay*1.05)mode='x';
+      else if(dy>LOCK&&ay>ax*1.05)mode='y';
+      else if((dx<-LOCK&&ax>ay)||(dy<-LOCK&&ay>ax))mode='ignore';
+    }
+    if(mode==='x'){
+      e.preventDefault();
+      sheet.style.transform=`translate3d(${Math.max(0,dx)}px,0,0)`;
+    }else if(mode==='y'){
+      e.preventDefault();
+      sheet.style.transform=`translate3d(0,${Math.max(0,dy)}px,0)`;
+    }
+  },{passive:false});
+  sheet.addEventListener('touchend',()=>{
+    if(!tracking||closing)return;
+    tracking=false;
+    const dx=Math.max(0,lastX-startX),dy=Math.max(0,lastY-startY);
+    const closeX=Math.max(90,Math.min(140,sheet.offsetWidth*.28));
+    if(mode==='y'&&dy>=CLOSE_Y)return finishClose('y',sheet.offsetHeight+40);
+    if(mode==='x'&&dx>=closeX)return finishClose('x',sheet.offsetWidth+40);
+    reset();
+  },{passive:true});
+  sheet.addEventListener('touchcancel',()=>{if(!closing){tracking=false;reset()}},{passive:true});
+}
+
 function openSheet(){
   const listId=currentListId();
   if(!listId)return alert('先にリストを選択してください');
@@ -31,10 +88,7 @@ function openSheet(){
   sheet.querySelectorAll('[data-choice]').forEach(button=>button.onclick=e=>{e.preventDefault();e.stopPropagation();sheet.dataset.itemPriority=button.dataset.choice;paint(sheet)});
   sheet.querySelector('#cancel').onclick=closeSheet;
   shade.onclick=e=>{if(e.target===shade)closeSheet()};
-  let startY=0,lastY=0;
-  sheet.addEventListener('touchstart',e=>{if(e.touches.length!==1)return;startY=lastY=e.touches[0].clientY},{passive:true});
-  sheet.addEventListener('touchmove',e=>{if(e.touches.length!==1)return;lastY=e.touches[0].clientY;const d=Math.max(0,lastY-startY);sheet.style.transform=`translateY(${d}px)`},{passive:true});
-  sheet.addEventListener('touchend',()=>{const d=lastY-startY;if(d>90)closeSheet();else{sheet.style.transform='';sheet.style.transition='transform .18s ease'}},{passive:true});
+  bindDragToClose(shade,sheet);
   add.onclick=()=>addItem(sheet,add,listId);
   sheet.querySelector('#name')?.focus();
 }
