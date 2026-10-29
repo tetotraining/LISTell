@@ -16,7 +16,48 @@ function paint(sheet){
   });
 }
 
-function closeSheet(){document.querySelector('#shade')?.remove()}
+function closeSheet(){
+  const shade=document.querySelector('#shade');
+  shade?._keyboardCleanup?.();
+  shade?.remove();
+}
+
+function bindKeyboardAvoidance(shade,sheet){
+  const viewport=window.visualViewport;
+  const add=sheet.querySelector('.priority-add');
+  if(!viewport||!add)return;
+  const baselineHeight=viewport.height;
+  let frame=0;
+  const update=()=>{
+    cancelAnimationFrame(frame);
+    frame=requestAnimationFrame(()=>{
+      if(!sheet.isConnected)return;
+      const keyboardOpen=viewport.height<baselineHeight-80;
+      if(!keyboardOpen){
+        sheet.style.bottom='0px';
+        return;
+      }
+      const currentLift=parseFloat(sheet.style.bottom)||0;
+      const sheetRect=sheet.getBoundingClientRect();
+      const buttonRect=add.getBoundingClientRect();
+      const visibleTop=viewport.offsetTop+8;
+      const visibleBottom=viewport.offsetTop+viewport.height-14;
+      const baseTop=sheetRect.top+currentLift;
+      const baseButtonBottom=buttonRect.bottom+currentLift;
+      const neededLift=Math.max(0,baseButtonBottom-visibleBottom);
+      const maxLift=Math.max(0,baseTop-visibleTop);
+      sheet.style.bottom=`${Math.min(neededLift,maxLift)}px`;
+    });
+  };
+  viewport.addEventListener('resize',update);
+  viewport.addEventListener('scroll',update);
+  shade._keyboardCleanup=()=>{
+    cancelAnimationFrame(frame);
+    viewport.removeEventListener('resize',update);
+    viewport.removeEventListener('scroll',update);
+  };
+  update();
+}
 
 function bindDragToClose(shade,sheet){
   let startX=0,startY=0,lastX=0,lastY=0,tracking=false,mode=null,edgeStart=false,closing=false;
@@ -82,7 +123,7 @@ function openSheet(){
   document.body.insertAdjacentHTML('beforeend',`<div class="shade" id="shade"><section class="sheet" data-priority-picker="ready" data-item-priority="normal"><div class="handle"></div><button id="cancel">キャンセル</button><em>NEW ITEM</em><h1>何を買いますか？</h1><input id="name" placeholder="商品名"><label>優先度</label><div class="chips"><button type="button" data-choice="urgent">● 早急</button><button type="button" data-choice="normal">● 通常</button><button type="button" data-choice="any">● いつでも</button></div><button type="button" class="priority-add">リストに追加</button></section></div>`);
   const shade=document.querySelector('#shade'),sheet=shade?.querySelector('.sheet');
   if(!shade||!sheet)return;
-  Object.assign(sheet.style,{height:'93%',maxHeight:'calc(100dvh - 18px)'});
+  Object.assign(sheet.style,{height:'76%',maxHeight:'calc(100dvh - 18px)',bottom:'0px'});
   const add=sheet.querySelector('.priority-add');
   Object.assign(add.style,{width:'100%',height:'56px',border:'0',borderRadius:'16px',background:'var(--accent,#b9f486)',color:'var(--accent-ink,#071006)',fontWeight:'800',fontSize:'18px',marginTop:'18px'});
   paint(sheet);
@@ -90,6 +131,7 @@ function openSheet(){
   sheet.querySelector('#cancel').onclick=closeSheet;
   shade.onclick=e=>{if(e.target===shade)closeSheet()};
   bindDragToClose(shade,sheet);
+  bindKeyboardAvoidance(shade,sheet);
   add.onclick=()=>addItem(sheet,add,listId);
   sheet.querySelector('#name')?.focus();
 }
