@@ -82,7 +82,7 @@ function openSheet(){
   document.body.insertAdjacentHTML('beforeend',`<div class="shade" id="shade"><section class="sheet" data-priority-picker="ready" data-item-priority="normal"><div class="handle"></div><button id="cancel">キャンセル</button><em>NEW ITEM</em><h1>何を買いますか？</h1><input id="name" placeholder="商品名"><label>優先度</label><div class="chips"><button type="button" data-choice="urgent">● 早急</button><button type="button" data-choice="normal">● 通常</button><button type="button" data-choice="any">● いつでも</button></div><button type="button" class="priority-add">リストに追加</button></section></div>`);
   const shade=document.querySelector('#shade'),sheet=shade?.querySelector('.sheet');
   if(!shade||!sheet)return;
-  Object.assign(sheet.style,{height:'86%',maxHeight:'calc(100dvh - 18px)'});
+  Object.assign(sheet.style,{height:'90%',maxHeight:'calc(100dvh - 18px)'});
   const add=sheet.querySelector('.priority-add');
   Object.assign(add.style,{width:'100%',height:'56px',border:'0',borderRadius:'16px',background:'var(--accent,#b9f486)',color:'var(--accent-ink,#071006)',fontWeight:'800',fontSize:'18px',marginTop:'18px'});
   paint(sheet);
