@@ -44,7 +44,7 @@ jobs:
           const id = process.argv[2];
           fs.writeFileSync('wrangler.paymo-api.jsonc', JSON.stringify({
             name: 'paymo-api',
-            main: 'worker/account-api.js',
+            main: 'worker/account-api-v2.js',
             compatibility_date: '2026-10-01',
             observability: { logs: { enabled: true, invocation_logs: true } },
             d1_databases: [{
@@ -62,18 +62,21 @@ jobs:
       - name: Deploy Paymo API Worker
         working-directory: paymo/app
         run: npx wrangler deploy --config wrangler.paymo-api.jsonc
-      - name: Verify Paymo API requires login
+      - name: Verify Paymo API authentication guards
         shell: bash
         run: |
           set -e
           for i in $(seq 1 12); do
-            status="$(curl -sS -o /tmp/paymo-api-me.json -w '%{http_code}' https://paymo-api.teto-training.workers.dev/api/me || true)"
-            echo "attempt=$i status=$status"
-            if [ "$status" = "401" ]; then
+            me_status="$(curl -sS -o /tmp/paymo-api-me.json -w '%{http_code}' https://paymo-api.teto-training.workers.dev/api/me || true)"
+            delete_status="$(curl -sS -X DELETE -o /tmp/paymo-api-delete.json -w '%{http_code}' https://paymo-api.teto-training.workers.dev/api/account || true)"
+            echo "attempt=$i me=$me_status delete=$delete_status"
+            if [ "$me_status" = "401" ] && [ "$delete_status" = "401" ]; then
               cat /tmp/paymo-api-me.json
+              cat /tmp/paymo-api-delete.json
               exit 0
             fi
             sleep 3
           done
           cat /tmp/paymo-api-me.json || true
+          cat /tmp/paymo-api-delete.json || true
           exit 1
