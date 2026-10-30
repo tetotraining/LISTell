@@ -47,6 +47,7 @@ jobs:
             main: 'worker/account-api-v2.js',
             compatibility_date: '2026-10-01',
             observability: { logs: { enabled: true, invocation_logs: true } },
+            triggers: { crons: ['* * * * *'] },
             d1_databases: [{
               binding: 'DB',
               database_name: 'paymo',
@@ -59,9 +60,48 @@ jobs:
       - name: Apply Paymo D1 migrations
         working-directory: paymo/app
         run: npx wrangler d1 migrations apply paymo --remote --config wrangler.paymo-api.jsonc
-      - name: Deploy Paymo API Worker
+      - name: Deploy Paymo API Worker with notification cron
         working-directory: paymo/app
         run: npx wrangler deploy --config wrangler.paymo-api.jsonc
+      - name: Ensure Paymo VAPID keys
+        working-directory: paymo/app
+        shell: bash
+        run: |
+          set -e
+          npx wrangler secret list --config wrangler.paymo-api.jsonc > /tmp/paymo-secrets.txt
+          npx wrangler d1 execute paymo --remote --config wrangler.paymo-api.jsonc --command "SELECT value FROM system_config WHERE key='vapid_public_key';" --json > /tmp/paymo-vapid-row.json
+          PUBLIC_PRESENT="$(node <<'NODE'
+          const fs=require('fs');
+          const data=JSON.parse(fs.readFileSync('/tmp/paymo-vapid-row.json','utf8'));
+          function find(v){
+            if(!v)return '';
+            if(Array.isArray(v)){for(const x of v){const r=find(x);if(r)return r}return ''}
+            if(typeof v==='object'){
+              if(typeof v.value==='string'&&v.value)return v.value;
+              for(const x of Object.values(v)){const r=find(x);if(r)return r}
+            }
+            return '';
+          }
+          process.stdout.write(find(data));
+          NODE
+          )"
+          if ! grep -q 'VAPID_PRIVATE_KEY' /tmp/paymo-secrets.txt || [ -z "$PUBLIC_PRESENT" ]; then
+            node <<'NODE'
+          const fs=require('fs');
+          const crypto=require('crypto');
+          const ecdh=crypto.createECDH('prime256v1');
+          ecdh.generateKeys();
+          fs.writeFileSync('/tmp/paymo-vapid-public',ecdh.getPublicKey().toString('base64url'));
+          fs.writeFileSync('/tmp/paymo-vapid-private',ecdh.getPrivateKey().toString('base64url'));
+          NODE
+            printf '%s' "$(cat /tmp/paymo-vapid-private)" | npx wrangler secret put VAPID_PRIVATE_KEY --config wrangler.paymo-api.jsonc
+            PUBLIC_KEY="$(cat /tmp/paymo-vapid-public)"
+            npx wrangler d1 execute paymo --remote --config wrangler.paymo-api.jsonc --command "INSERT INTO system_config(key,value) VALUES('vapid_public_key','$PUBLIC_KEY') ON CONFLICT(key) DO UPDATE SET value=excluded.value;"
+            rm -f /tmp/paymo-vapid-public /tmp/paymo-vapid-private
+            echo "Paymo VAPID keys configured."
+          else
+            echo "Paymo VAPID keys already configured."
+          fi
       - name: Verify Paymo API authentication guards
         shell: bash
         run: |
@@ -69,14 +109,17 @@ jobs:
           for i in $(seq 1 12); do
             me_status="$(curl -sS -o /tmp/paymo-api-me.json -w '%{http_code}' https://paymo-api.teto-training.workers.dev/api/me || true)"
             delete_status="$(curl -sS -X DELETE -o /tmp/paymo-api-delete.json -w '%{http_code}' https://paymo-api.teto-training.workers.dev/api/account || true)"
-            echo "attempt=$i me=$me_status delete=$delete_status"
-            if [ "$me_status" = "401" ] && [ "$delete_status" = "401" ]; then
+            notification_status="$(curl -sS -o /tmp/paymo-api-notification.json -w '%{http_code}' https://paymo-api.teto-training.workers.dev/api/notification-settings || true)"
+            echo "attempt=$i me=$me_status delete=$delete_status notification=$notification_status"
+            if [ "$me_status" = "401" ] && [ "$delete_status" = "401" ] && [ "$notification_status" = "401" ]; then
               cat /tmp/paymo-api-me.json
               cat /tmp/paymo-api-delete.json
+              cat /tmp/paymo-api-notification.json
               exit 0
             fi
             sleep 3
           done
           cat /tmp/paymo-api-me.json || true
           cat /tmp/paymo-api-delete.json || true
+          cat /tmp/paymo-api-notification.json || true
           exit 1
