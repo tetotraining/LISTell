@@ -123,3 +123,5 @@ jobs:
           cat /tmp/paymo-api-delete.json || true
           cat /tmp/paymo-api-notification.json || true
           exit 1
+
+# Retrigger: notification dedicated page + per-day toggles
