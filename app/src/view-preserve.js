@@ -14,6 +14,25 @@ queueMicrotask(()=>{
 const MAIN_TABS=['all','list','priority','menu'];
 let topAnimationFrame=0;
 let stickyOffsetFrame=0;
+let priorityFadeFrame=0;
+
+function syncPriorityHeadingFade(){
+  cancelAnimationFrame(priorityFadeFrame);
+  priorityFadeFrame=requestAnimationFrame(()=>{
+    const main=document.querySelector('#app>main:not(.auth)');
+    const header=main?.querySelector(':scope > header');
+    if(!main||!header)return;
+    const mainTop=main.getBoundingClientRect().top;
+    const headerTop=parseFloat(getComputedStyle(header).top)||0;
+    const stickyTop=mainTop+Math.max(0,Math.ceil(header.offsetHeight+headerTop));
+    const fadeDistance=36;
+    main.querySelectorAll(':scope > .priority-group .priority-heading').forEach(heading=>{
+      const pushed=Math.max(0,stickyTop-heading.getBoundingClientRect().top);
+      const opacity=Math.max(0,Math.min(1,1-pushed/fadeDistance));
+      heading.style.opacity=String(opacity);
+    });
+  });
+}
 
 function syncPriorityHeadingOffset(){
   cancelAnimationFrame(stickyOffsetFrame);
@@ -24,13 +43,24 @@ function syncPriorityHeadingOffset(){
     const top=parseFloat(getComputedStyle(header).top)||0;
     const stickyBottom=Math.max(0,Math.ceil(header.offsetHeight+top));
     main.style.setProperty('--listell-sticky-header-bottom',`${stickyBottom}px`);
+    syncPriorityHeadingFade();
   });
 }
 
 const appRoot=document.querySelector('#app');
-if(appRoot)new MutationObserver(syncPriorityHeadingOffset).observe(appRoot,{childList:true,subtree:true});
-window.addEventListener('resize',syncPriorityHeadingOffset,{passive:true});
-queueMicrotask(syncPriorityHeadingOffset);
+if(appRoot)new MutationObserver(()=>{
+  syncPriorityHeadingOffset();
+  syncPriorityHeadingFade();
+}).observe(appRoot,{childList:true,subtree:true});
+window.addEventListener('resize',()=>{
+  syncPriorityHeadingOffset();
+  syncPriorityHeadingFade();
+},{passive:true});
+document.addEventListener('scroll',syncPriorityHeadingFade,{passive:true,capture:true});
+queueMicrotask(()=>{
+  syncPriorityHeadingOffset();
+  syncPriorityHeadingFade();
+});
 
 function currentScroller(){
   const main=document.querySelector('#app>main:not(.auth)');
@@ -57,6 +87,7 @@ function scrollCurrentViewToTop(){
     const y=start*(1-ease(progress));
     if(scroller===document.scrollingElement||scroller===document.documentElement)window.scrollTo(0,y);
     else scroller.scrollTop=y;
+    syncPriorityHeadingFade();
     if(progress<1)topAnimationFrame=requestAnimationFrame(tick);
   };
   topAnimationFrame=requestAnimationFrame(tick);
