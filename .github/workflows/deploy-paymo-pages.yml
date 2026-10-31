@@ -49,14 +49,16 @@ jobs:
           for i in $(seq 1 20); do
             ts=$(date +%s)
             html_status="$(curl -sS --max-time 10 -o /tmp/paymo-index.html -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/?ts=$ts" || true)"
-            d1_status="$(curl -sS --max-time 10 -o /tmp/paymo-d1.js -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/paymo-d1.js?ts=$ts" || true)"
+            graph_edit_status="$(curl -sS --max-time 10 -o /tmp/paymo-graph-detail-edit.js -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/paymo-graph-detail-edit.js?ts=$ts" || true)"
             auth_status="$(curl -sS --max-time 10 -o /tmp/paymo-me.json -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/api/me?ts=$ts" || true)"
-            echo "attempt=$i html=$html_status d1=$d1_status auth=$auth_status"
+            echo "attempt=$i html=$html_status graph_edit=$graph_edit_status auth=$auth_status"
             if [ "$html_status" = "200" ] \
-              && [ "$d1_status" = "200" ] \
+              && [ "$graph_edit_status" = "200" ] \
               && [ "$auth_status" = "401" ] \
-              && grep -Fq "if (before === next) return;" /tmp/paymo-d1.js; then
-              echo "Paymo production verified with graph rerender guard."
+              && grep -Fq "window.paymoOpenHistoryEditor(id);" /tmp/paymo-graph-detail-edit.js \
+              && grep -Fq "history-edit-sheet{z-index:901!important}" /tmp/paymo-graph-detail-edit.js \
+              && ! grep -Fq "back.click();" /tmp/paymo-graph-detail-edit.js; then
+              echo "Paymo production verified with in-place graph editor."
               exit 0
             fi
             sleep 5
