@@ -13,6 +13,24 @@ queueMicrotask(()=>{
 
 const MAIN_TABS=['all','list','priority','menu'];
 let topAnimationFrame=0;
+let stickyOffsetFrame=0;
+
+function syncPriorityHeadingOffset(){
+  cancelAnimationFrame(stickyOffsetFrame);
+  stickyOffsetFrame=requestAnimationFrame(()=>{
+    const main=document.querySelector('#app>main:not(.auth)');
+    const header=main?.querySelector(':scope > header');
+    if(!main||!header)return;
+    const top=parseFloat(getComputedStyle(header).top)||0;
+    const stickyBottom=Math.max(0,Math.ceil(header.offsetHeight+top));
+    main.style.setProperty('--listell-sticky-header-bottom',`${stickyBottom}px`);
+  });
+}
+
+const appRoot=document.querySelector('#app');
+if(appRoot)new MutationObserver(syncPriorityHeadingOffset).observe(appRoot,{childList:true,subtree:true});
+window.addEventListener('resize',syncPriorityHeadingOffset,{passive:true});
+queueMicrotask(syncPriorityHeadingOffset);
 
 function currentScroller(){
   const main=document.querySelector('#app>main:not(.auth)');
