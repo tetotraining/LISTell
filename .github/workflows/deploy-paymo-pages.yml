@@ -56,7 +56,7 @@ jobs:
               && [ "$marker_status" = "200" ] \
               && grep -q 'paymo-statusbar-sync-20261101-v1' /tmp/statusbar-marker.txt \
               && [ "$auth_status" = "401" ] \
-              && ! grep -q 'apple-mobile-web-app-status-bar-style' /tmp/paymo-index.html \
+              && ! grep -Eqi '<meta[^>]+apple-mobile-web-app-status-bar-style' /tmp/paymo-index.html \
               && grep -q 'paymo-theme-reload-sync' /tmp/paymo-index.html; then
               echo "Paymo Pages direct deployment verified with the iOS status bar reload workaround."
               exit 0
@@ -64,6 +64,6 @@ jobs:
             sleep 5
           done
           echo "Paymo Pages direct deployment verification failed."
-          echo "status meta count: $(grep -c 'apple-mobile-web-app-status-bar-style' /tmp/paymo-index.html || true)"
+          echo "status meta tag count: $(grep -Eic '<meta[^>]+apple-mobile-web-app-status-bar-style' /tmp/paymo-index.html || true)"
           echo "reload marker count: $(grep -c 'paymo-theme-reload-sync' /tmp/paymo-index.html || true)"
           exit 1
