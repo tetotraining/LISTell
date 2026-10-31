@@ -25,9 +25,27 @@ function bindMainScroller(main){
 }
 
 function clamp01(value){return Math.max(0,Math.min(1,value))}
-function smoothstep(value){
-  const t=clamp01(value);
-  return t*t*(3-2*t);
+
+function syncProductFadeLayer(main,header){
+  const hasRows=!!main.querySelector('.rows .row');
+  let layer=main.querySelector(':scope > .listell-scroll-fade');
+
+  // Remove any old row-by-row opacity so products do not disappear in hard bands.
+  main.querySelectorAll('.row').forEach(row=>{
+    if(!row.classList.contains('purchasing'))row.style.removeProperty('opacity');
+  });
+
+  if(!hasRows){
+    layer?.remove();
+    return;
+  }
+
+  if(!layer){
+    layer=document.createElement('div');
+    layer.className='listell-scroll-fade';
+    layer.setAttribute('aria-hidden','true');
+  }
+  if(layer.previousElementSibling!==header)header.insertAdjacentElement('afterend',layer);
 }
 
 function syncScrollFades(){
@@ -37,25 +55,22 @@ function syncScrollFades(){
     const header=main?.querySelector(':scope > header');
     if(!main||!header)return;
     bindMainScroller(main);
+    syncProductFadeLayer(main,header);
 
     const styles=getComputedStyle(main);
     const gap=parseFloat(styles.getPropertyValue('--listell-priority-gap'))||30;
     const priorityFadeStart=parseFloat(styles.getPropertyValue('--listell-priority-fade-start'))||44;
     const priorityFadeEndGap=parseFloat(styles.getPropertyValue('--listell-priority-fade-end-gap'))||16;
-    const productFadeDistance=parseFloat(styles.getPropertyValue('--listell-product-fade-distance'))||140;
     const mainTop=main.getBoundingClientRect().top;
     const headerTop=parseFloat(getComputedStyle(header).top)||0;
     const headerBottom=Math.max(0,Math.ceil(header.offsetHeight+headerTop));
     const stickyTop=mainTop+headerBottom+gap;
 
-    // Priority headings can be nested differently after the rows are grouped.
-    // Fade them out before their sticky parent would push them into the fixed meta row.
-    const headings=[...main.querySelectorAll('.priority-heading')];
-    let headingHeight=0;
-    headings.forEach(heading=>{
+    // Priority headings remain above the continuous product fade layer, but fade
+    // themselves before they can overlap the fixed count/sort row.
+    main.querySelectorAll('.priority-heading').forEach(heading=>{
       const group=heading.closest('.priority-group');
       const headingRect=heading.getBoundingClientRect();
-      headingHeight=Math.max(headingHeight,headingRect.height||0);
       if(!group){heading.style.opacity='1';return}
 
       const groupRect=group.getBoundingClientRect();
@@ -66,27 +81,9 @@ function syncScrollFades(){
         else if(remaining<priorityFadeStart){
           opacity=(remaining-priorityFadeEndGap)/Math.max(1,priorityFadeStart-priorityFadeEndGap);
         }
-        // Never allow a fading heading to travel upward into the fixed count/sort area.
         if(headingRect.top<stickyTop-1)opacity=0;
       }
       heading.style.opacity=String(clamp01(opacity));
-    });
-
-    // Fade each product gradually over a longer scroll distance.
-    const fadeEnd=headings.length
-      ?stickyTop+Math.max(headingHeight,22)+6
-      :mainTop+headerBottom+6;
-    const fadeStart=fadeEnd+productFadeDistance;
-
-    main.querySelectorAll('.row[data-id]').forEach(row=>{
-      if(row.classList.contains('purchasing'))return;
-      const rowTop=row.getBoundingClientRect().top;
-      let opacity=1;
-      if(rowTop<=fadeEnd)opacity=0;
-      else if(rowTop<fadeStart){
-        opacity=smoothstep((rowTop-fadeEnd)/Math.max(1,productFadeDistance));
-      }
-      row.style.opacity=String(opacity);
     });
   });
 }
