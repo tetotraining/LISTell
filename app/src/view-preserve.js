@@ -22,10 +22,14 @@ function syncPriorityHeadingFade(){
     const main=document.querySelector('#app>main:not(.auth)');
     const header=main?.querySelector(':scope > header');
     if(!main||!header)return;
+    const styles=getComputedStyle(main);
+    const gap=parseFloat(styles.getPropertyValue('--listell-priority-gap'))||30;
+    const fadeEndGap=parseFloat(styles.getPropertyValue('--listell-priority-fade-end-gap'))||12;
     const mainTop=main.getBoundingClientRect().top;
     const headerTop=parseFloat(getComputedStyle(header).top)||0;
-    const stickyTop=mainTop+Math.max(0,Math.ceil(header.offsetHeight+headerTop));
-    const fadeDistance=36;
+    const headerBottom=Math.max(0,Math.ceil(header.offsetHeight+headerTop));
+    const stickyTop=mainTop+headerBottom+gap;
+    const fadeDistance=Math.max(1,gap-fadeEndGap);
     main.querySelectorAll(':scope > .priority-group .priority-heading').forEach(heading=>{
       const pushed=Math.max(0,stickyTop-heading.getBoundingClientRect().top);
       const opacity=Math.max(0,Math.min(1,1-pushed/fadeDistance));
