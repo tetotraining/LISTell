@@ -1,0 +1,66 @@
+name: Deploy Paymo Pages directly
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - '.github/workflows/deploy-paymo-pages.yml'
+
+jobs:
+  deploy-paymo-pages:
+    runs-on: ubuntu-slim
+    env:
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+      CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+    steps:
+      - name: Check out Paymo
+        uses: actions/checkout@v4
+        with:
+          repository: tetotraining/teto-paymo
+          ref: main
+          path: paymo
+          fetch-depth: 1
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Wrangler
+        working-directory: paymo/app
+        run: npm install
+      - name: Deploy Paymo Pages with Functions
+        shell: bash
+        run: |
+          set -e
+          PAYMO_SHA="$(git -C paymo rev-parse HEAD)"
+          PAYMO_MESSAGE="$(git -C paymo log -1 --pretty=%s)"
+          cd paymo
+          ./app/node_modules/.bin/wrangler pages deploy app/public \
+            --project-name=teto-paymo \
+            --branch=main \
+            --commit-hash="$PAYMO_SHA" \
+            --commit-message="$PAYMO_MESSAGE"
+      - name: Verify iOS status bar fix in production
+        shell: bash
+        run: |
+          set -e
+          for i in $(seq 1 20); do
+            ts=$(date +%s)
+            html_status="$(curl -sS --max-time 10 -o /tmp/paymo-index.html -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/?ts=$ts" || true)"
+            marker_status="$(curl -sS --max-time 10 -o /tmp/statusbar-marker.txt -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/statusbar-sync-marker.txt?ts=$ts" || true)"
+            auth_status="$(curl -sS --max-time 10 -o /tmp/paymo-me.json -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/api/me?ts=$ts" || true)"
+            echo "attempt=$i html=$html_status marker=$marker_status auth=$auth_status"
+            if [ "$html_status" = "200" ] \
+              && [ "$marker_status" = "200" ] \
+              && grep -q 'paymo-statusbar-sync-20261101-v1' /tmp/statusbar-marker.txt \
+              && [ "$auth_status" = "401" ] \
+              && ! grep -q 'apple-mobile-web-app-status-bar-style' /tmp/paymo-index.html \
+              && grep -q 'paymo-theme-reload-sync' /tmp/paymo-index.html; then
+              echo "Paymo Pages direct deployment verified with the iOS status bar reload workaround."
+              exit 0
+            fi
+            sleep 5
+          done
+          echo "Paymo Pages direct deployment verification failed."
+          echo "status meta count: $(grep -c 'apple-mobile-web-app-status-bar-style' /tmp/paymo-index.html || true)"
+          echo "reload marker count: $(grep -c 'paymo-theme-reload-sync' /tmp/paymo-index.html || true)"
+          exit 1
