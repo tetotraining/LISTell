@@ -54,9 +54,9 @@ function syncScrollFades(){
     const headerBottom=Math.max(0,Math.ceil(header.offsetHeight+headerTop));
     const fixedBottom=mainTop+headerBottom;
     const stickyTop=fixedBottom+gap;
-    const fullVisibleTop=stickyTop;
     const fullyHiddenTop=fixedBottom+4;
-    const fadeTravel=Math.max(1,fullVisibleTop-fullyHiddenTop);
+    const fadeTravel=Math.max(1,stickyTop-fullyHiddenTop);
+    const fadeLead=24;
 
     const headings=[...main.querySelectorAll('.priority-heading')];
     let activeHeading=null;
@@ -69,15 +69,19 @@ function syncScrollFades(){
       const groupRect=group?.getBoundingClientRect();
 
       let opacity=1;
-      if(rect.top<fullVisibleTop){
-        opacity=smoothstep((rect.top-fullyHiddenTop)/fadeTravel);
+      if(groupRect&&rect.top<=stickyTop+1){
+        // Begin fading slightly before the group starts pushing the sticky label.
+        // Continue fading while the label slides underneath the opaque header mask,
+        // reaching opacity 0 by the time it is fully covered.
+        const remainingBeforePush=groupRect.bottom-(stickyTop+rect.height);
+        const progress=clamp01((fadeLead-remainingBeforePush)/(fadeLead+fadeTravel));
+        opacity=1-smoothstep(progress);
       }
       if(rect.top<=fullyHiddenTop)opacity=0;
       heading.style.opacity=String(clamp01(opacity));
 
-      // Only the priority heading that is genuinely pinned gets the product
-      // fade and the solid cover above it. This prevents products under normal
-      // (non-pinned) headings from looking faded.
+      // Only the priority heading that is genuinely pinned gets the product fade.
+      // Products under normal (non-pinned) headings remain fully visible.
       if(!activeHeading&&main.scrollTop>1&&groupRect&&rect.top<=stickyTop+1&&groupRect.bottom>stickyTop+rect.height){
         activeHeading=heading;
       }
