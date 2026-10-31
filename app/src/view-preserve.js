@@ -14,16 +14,31 @@ queueMicrotask(()=>{
 const MAIN_TABS=['all','list','priority','menu'];
 let topAnimationFrame=0;
 
+function currentScroller(){
+  const main=document.querySelector('#app>main:not(.auth)');
+  if(main&&main.scrollHeight>main.clientHeight+1)return main;
+  return document.scrollingElement||document.documentElement;
+}
+
 function scrollCurrentViewToTop(){
   cancelAnimationFrame(topAnimationFrame);
-  const start=Math.max(window.scrollY,document.documentElement.scrollTop,document.body.scrollTop);
-  if(start<=1){window.scrollTo(0,0);return}
+  const scroller=currentScroller();
+  const start=scroller===document.scrollingElement||scroller===document.documentElement
+    ?Math.max(window.scrollY,document.documentElement.scrollTop,document.body.scrollTop)
+    :scroller.scrollTop;
+  if(start<=1){
+    if(scroller===document.scrollingElement||scroller===document.documentElement)window.scrollTo(0,0);
+    else scroller.scrollTop=0;
+    return;
+  }
   const started=performance.now();
   const duration=Math.min(720,Math.max(420,360+start*.08));
   const ease=t=>1-Math.pow(1-t,3);
   const tick=now=>{
     const progress=Math.min(1,(now-started)/duration);
-    window.scrollTo(0,start*(1-ease(progress)));
+    const y=start*(1-ease(progress));
+    if(scroller===document.scrollingElement||scroller===document.documentElement)window.scrollTo(0,y);
+    else scroller.scrollTop=y;
     if(progress<1)topAnimationFrame=requestAnimationFrame(tick);
   };
   topAnimationFrame=requestAnimationFrame(tick);
