@@ -5,7 +5,9 @@
   -webkit-overflow-scrolling:touch;
   overscroll-behavior-y:contain;
   --listell-priority-gap:30px;
+  --listell-priority-fade-start:36px;
   --listell-priority-fade-end-gap:12px;
+  --listell-product-fade-distance:42px;
 }
 
 #app>main:not(.auth)>header{
@@ -26,30 +28,33 @@
 }
 
 /*
-  Keep the full fixed gap below the meta row opaque so scrolling products
-  can never show through above the priority label. The fade begins only
-  below that fixed gap.
+  The fixed gap below the header is fully opaque. Product fading is handled
+  on the product rows themselves, so nothing can show through this gap.
 */
 #app>main:not(.auth)>header::after{
   content:'';
   position:absolute;
   left:0;
   right:0;
-  bottom:-48px;
-  height:48px;
+  bottom:calc(-1 * var(--listell-priority-gap,30px));
+  height:var(--listell-priority-gap,30px);
   z-index:2;
   pointer-events:none;
-  background:
-    linear-gradient(var(--base,#050605),var(--base,#050605)) top/100% 30px no-repeat,
-    linear-gradient(to bottom,var(--base,#050605) 0%,color-mix(in srgb,var(--base,#050605) 72%,transparent) 38%,color-mix(in srgb,var(--base,#050605) 30%,transparent) 72%,transparent 100%) bottom/100% 18px no-repeat;
+  background:var(--base,#050605);
 }
 
-/* Keep the priority label at the same visual gap below the fixed meta/header area. */
+/* Keep the priority label at a fixed gap below the complete fixed header. */
 #app>main:not(.auth)>.priority-group .priority-heading{
   position:-webkit-sticky;
   position:sticky;
   top:calc(var(--listell-sticky-header-bottom,88px) + var(--listell-priority-gap,30px));
-  z-index:10;
+  z-index:8;
   background:var(--base,#050605);
   will-change:opacity;
+}
+
+/* Scroll-linked opacity is applied directly by view-preserve.js. */
+#app>main:not(.auth)>.priority-group .row:not(.purchasing){
+  will-change:opacity;
+  transition:none;
 }
