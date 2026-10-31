@@ -7,7 +7,7 @@
   --listell-priority-gap:30px;
   --listell-priority-fade-start:44px;
   --listell-priority-fade-end-gap:16px;
-  --listell-product-fade-distance:280px;
+  --listell-product-fade-distance:140px;
 }
 
 #app>main:not(.auth)>header{
@@ -30,7 +30,7 @@
 /*
   One continuous fade layer sits above the scrolling products.
   The first 30px stays fully opaque, then the layer gradually becomes
-  transparent across the rest of the 280px zone. This avoids row-by-row
+  transparent across the rest of the 140px zone. This avoids row-by-row
   cutoffs and keeps the fixed header area clean.
 */
 #app>main:not(.auth)>.listell-scroll-fade{
@@ -38,8 +38,8 @@
   position:sticky;
   top:var(--listell-sticky-header-bottom,88px);
   z-index:7;
-  height:var(--listell-product-fade-distance,280px);
-  margin:0 -22px calc(-1 * var(--listell-product-fade-distance,280px));
+  height:var(--listell-product-fade-distance,140px);
+  margin:0 -22px calc(-1 * var(--listell-product-fade-distance,140px));
   pointer-events:none;
   background:linear-gradient(
     to bottom,
