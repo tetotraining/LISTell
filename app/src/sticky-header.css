@@ -26,3 +26,11 @@
   pointer-events:none;
   background:linear-gradient(to bottom,var(--base,#050605) 0%,color-mix(in srgb,var(--base,#050605) 78%,transparent) 30%,color-mix(in srgb,var(--base,#050605) 38%,transparent) 68%,transparent 100%);
 }
+
+#app>main:not(.auth)>.priority-group .priority-heading{
+  position:-webkit-sticky;
+  position:sticky;
+  top:var(--listell-sticky-header-bottom,88px);
+  z-index:10;
+  background:var(--base,#050605);
+}
