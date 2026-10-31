@@ -30,32 +30,12 @@ function smoothstep(value){
   return t*t*(3-2*t);
 }
 
-function syncProductMask(main,header,activeHeading){
+function removeLegacyProductEffects(main){
   main.querySelector(':scope > .listell-scroll-fade')?.remove();
+  main.querySelector(':scope > .listell-product-mask')?.remove();
   main.querySelectorAll('.row').forEach(row=>{
     if(!row.classList.contains('purchasing'))row.style.removeProperty('opacity');
   });
-
-  let mask=main.querySelector(':scope > .listell-product-mask');
-  if(!main.querySelector('.priority-heading')){
-    mask?.remove();
-    return;
-  }
-
-  if(!mask){
-    mask=document.createElement('div');
-    mask.className='listell-product-mask';
-    mask.setAttribute('aria-hidden','true');
-  }
-  if(mask.previousElementSibling!==header)header.insertAdjacentElement('afterend',mask);
-
-  if(activeHeading){
-    const height=Math.max(1,Math.ceil(activeHeading.getBoundingClientRect().height));
-    main.style.setProperty('--listell-active-priority-height',`${height}px`);
-    mask.classList.add('is-active');
-  }else{
-    mask.classList.remove('is-active');
-  }
 }
 
 function syncScrollFades(){
@@ -65,6 +45,7 @@ function syncScrollFades(){
     const header=main?.querySelector(':scope > header');
     if(!main||!header)return;
     bindMainScroller(main);
+    removeLegacyProductEffects(main);
 
     const styles=getComputedStyle(main);
     const gap=parseFloat(styles.getPropertyValue('--listell-priority-gap'))||30;
@@ -81,6 +62,8 @@ function syncScrollFades(){
     let activeHeading=null;
 
     headings.forEach(heading=>{
+      heading.classList.remove('is-pinned');
+
       const rect=heading.getBoundingClientRect();
       const group=heading.closest('.priority-group');
       const groupRect=group?.getBoundingClientRect();
@@ -92,14 +75,15 @@ function syncScrollFades(){
       if(rect.top<=fullyHiddenTop)opacity=0;
       heading.style.opacity=String(clamp01(opacity));
 
-      // The product fade must exist only for the heading that is genuinely pinned.
-      // scrollTop > 1 prevents the first group's products from looking faded at rest.
+      // Only the priority heading that is genuinely pinned gets the product
+      // fade and the solid cover above it. This prevents products under normal
+      // (non-pinned) headings from looking faded.
       if(!activeHeading&&main.scrollTop>1&&groupRect&&rect.top<=stickyTop+1&&groupRect.bottom>stickyTop+rect.height){
         activeHeading=heading;
       }
     });
 
-    syncProductMask(main,header,activeHeading);
+    activeHeading?.classList.add('is-pinned');
   });
 }
 
