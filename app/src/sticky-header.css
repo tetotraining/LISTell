@@ -5,8 +5,6 @@
   -webkit-overflow-scrolling:touch;
   overscroll-behavior-y:contain;
   --listell-priority-gap:30px;
-  --listell-priority-fade-start:44px;
-  --listell-priority-fade-end-gap:16px;
   --listell-product-fade-distance:140px;
 }
 
@@ -20,36 +18,43 @@
   background:var(--base,#050605);
 }
 
-/* Keep the All Lists count/sort row inside the pinned header. */
+/* Keep item count / sort fully readable and above everything that scrolls. */
 #app>main:not(.auth)>header .meta{
   position:relative;
-  z-index:1;
+  z-index:2;
   background:var(--base,#050605);
 }
 
 /*
-  One continuous fade layer sits above the scrolling products.
-  The first 30px stays fully opaque, then the layer gradually becomes
-  transparent across the rest of the 140px zone. This avoids row-by-row
-  cutoffs and keeps the fixed header area clean.
+  Priority-heading fade zone.
+  A heading is fully visible at the bottom of this fixed 30px gap, then fades
+  as its group pushes it upward toward the item-count row. The fixed header is
+  always painted above it, so the texts never overlap visibly.
 */
-#app>main:not(.auth)>.listell-scroll-fade{
-  position:-webkit-sticky;
-  position:sticky;
-  top:var(--listell-sticky-header-bottom,88px);
-  z-index:7;
-  height:var(--listell-product-fade-distance,140px);
-  margin:0 -22px calc(-1 * var(--listell-product-fade-distance,140px));
+#app>main:not(.auth)>header::after{
+  content:'';
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:calc(-1 * var(--listell-priority-gap,30px));
+  height:var(--listell-priority-gap,30px);
+  z-index:1;
   pointer-events:none;
   background:linear-gradient(
     to bottom,
-    var(--base,#050605) 0,
-    var(--base,#050605) var(--listell-priority-gap,30px),
+    var(--base,#050605) 0%,
+    color-mix(in srgb,var(--base,#050605) 88%,transparent) 28%,
+    color-mix(in srgb,var(--base,#050605) 52%,transparent) 62%,
     transparent 100%
   );
 }
 
-/* Priority labels stay above the product fade layer. */
+/* Old global product fade layer is no longer used. */
+#app>main:not(.auth)>.listell-scroll-fade{
+  display:none!important;
+}
+
+/* Priority labels stay fixed below the count/sort row while their group exists. */
 #app>main:not(.auth) .priority-group .priority-heading{
   position:-webkit-sticky;
   position:sticky;
@@ -57,4 +62,28 @@
   z-index:8;
   background:var(--base,#050605);
   will-change:opacity;
+}
+
+/*
+  Product fade zone.
+  It belongs to each priority heading, so a product fades only when it approaches
+  that heading. The heading itself has an opaque background, preventing product
+  text or divider lines from ever showing through the label text.
+*/
+#app>main:not(.auth) .priority-group .priority-heading::after{
+  content:'';
+  position:absolute;
+  left:-22px;
+  right:-22px;
+  top:100%;
+  height:var(--listell-product-fade-distance,140px);
+  pointer-events:none;
+  background:linear-gradient(
+    to bottom,
+    var(--base,#050605) 0%,
+    color-mix(in srgb,var(--base,#050605) 92%,transparent) 12%,
+    color-mix(in srgb,var(--base,#050605) 68%,transparent) 38%,
+    color-mix(in srgb,var(--base,#050605) 32%,transparent) 70%,
+    transparent 100%
+  );
 }
