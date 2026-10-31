@@ -5,7 +5,7 @@
   -webkit-overflow-scrolling:touch;
   overscroll-behavior-y:contain;
   --listell-priority-gap:30px;
-  --listell-product-fade-distance:140px;
+  --listell-product-fade-distance:56px;
 }
 
 #app>main:not(.auth)>header{
@@ -66,9 +66,9 @@
 
 /*
   Product fade zone.
-  It belongs to each priority heading, so a product fades only when it approaches
-  that heading. The heading itself has an opaque background, preventing product
-  text or divider lines from ever showing through the label text.
+  Keep it narrow so only the product immediately approaching the sticky priority
+  label fades. Products farther down remain fully readable. The heading itself
+  stays opaque, so product text and divider lines never overlap the label text.
 */
 #app>main:not(.auth) .priority-group .priority-heading::after{
   content:'';
@@ -76,14 +76,13 @@
   left:-22px;
   right:-22px;
   top:100%;
-  height:var(--listell-product-fade-distance,140px);
+  height:var(--listell-product-fade-distance,56px);
   pointer-events:none;
   background:linear-gradient(
     to bottom,
     var(--base,#050605) 0%,
-    color-mix(in srgb,var(--base,#050605) 92%,transparent) 12%,
-    color-mix(in srgb,var(--base,#050605) 68%,transparent) 38%,
-    color-mix(in srgb,var(--base,#050605) 32%,transparent) 70%,
+    color-mix(in srgb,var(--base,#050605) 82%,transparent) 22%,
+    color-mix(in srgb,var(--base,#050605) 42%,transparent) 58%,
     transparent 100%
   );
 }
