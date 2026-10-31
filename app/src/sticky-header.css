@@ -59,22 +59,11 @@
 }
 
 /*
-  Only the priority heading that is actually pinned gets these layers.
-  ::after fades the approaching product over the final 56px.
-  ::before is a fully opaque cover above the heading, so once a product has
-  passed the heading it cannot reappear in the gap above it.
+  Only the priority heading that is actually pinned gets the product fade.
+  The fixed header already owns the fully opaque 30px cover above the heading,
+  so no heading-attached upper mask is needed. This prevents that mask from ever
+  covering the item-count / sort row while a group is being pushed out.
 */
-#app>main:not(.auth) .priority-group .priority-heading.is-pinned::before{
-  content:'';
-  position:absolute;
-  left:-22px;
-  right:-22px;
-  bottom:100%;
-  height:calc(var(--listell-priority-gap,30px) + 2px);
-  pointer-events:none;
-  background:var(--base,#050605);
-}
-
 #app>main:not(.auth) .priority-group .priority-heading.is-pinned::after{
   content:'';
   position:absolute;
