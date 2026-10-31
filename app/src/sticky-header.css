@@ -6,6 +6,7 @@
   overscroll-behavior-y:contain;
   --listell-priority-gap:30px;
   --listell-product-fade-distance:56px;
+  --listell-active-priority-height:24px;
 }
 
 #app>main:not(.auth)>header{
@@ -25,31 +26,7 @@
   background:var(--base,#050605);
 }
 
-/*
-  Priority-heading fade zone.
-  A heading is fully visible at the bottom of this fixed 30px gap, then fades
-  as its group pushes it upward toward the item-count row. The fixed header is
-  always painted above it, so the texts never overlap visibly.
-*/
-#app>main:not(.auth)>header::after{
-  content:'';
-  position:absolute;
-  left:0;
-  right:0;
-  bottom:calc(-1 * var(--listell-priority-gap,30px));
-  height:var(--listell-priority-gap,30px);
-  z-index:1;
-  pointer-events:none;
-  background:linear-gradient(
-    to bottom,
-    var(--base,#050605) 0%,
-    color-mix(in srgb,var(--base,#050605) 88%,transparent) 28%,
-    color-mix(in srgb,var(--base,#050605) 52%,transparent) 62%,
-    transparent 100%
-  );
-}
-
-/* Old global product fade layer is no longer used. */
+/* Old product fade layers are no longer used. */
 #app>main:not(.auth)>.listell-scroll-fade{
   display:none!important;
 }
@@ -65,24 +42,28 @@
 }
 
 /*
-  Product fade zone.
-  Keep it narrow so only the product immediately approaching the sticky priority
-  label fades. Products farther down remain fully readable. The heading itself
-  stays opaque, so product text and divider lines never overlap the label text.
+  One product mask is shown only while a priority heading is actually stuck.
+  Products stay fully visible in their normal positions. As a product approaches
+  the active sticky heading it fades through the final 56px, then becomes fully
+  hidden before it can overlap the heading or the item-count row.
 */
-#app>main:not(.auth) .priority-group .priority-heading::after{
-  content:'';
-  position:absolute;
-  left:-22px;
-  right:-22px;
-  top:100%;
-  height:var(--listell-product-fade-distance,56px);
+#app>main:not(.auth)>.listell-product-mask{
+  position:-webkit-sticky;
+  position:sticky;
+  top:var(--listell-sticky-header-bottom,88px);
+  z-index:7;
+  height:calc(var(--listell-priority-gap,30px) + var(--listell-active-priority-height,24px) + var(--listell-product-fade-distance,56px));
+  margin:0 -22px calc(-1 * (var(--listell-priority-gap,30px) + var(--listell-active-priority-height,24px) + var(--listell-product-fade-distance,56px)));
   pointer-events:none;
+  opacity:0;
   background:linear-gradient(
     to bottom,
-    var(--base,#050605) 0%,
-    color-mix(in srgb,var(--base,#050605) 82%,transparent) 22%,
-    color-mix(in srgb,var(--base,#050605) 42%,transparent) 58%,
+    var(--base,#050605) 0,
+    var(--base,#050605) calc(var(--listell-priority-gap,30px) + var(--listell-active-priority-height,24px)),
     transparent 100%
   );
+}
+
+#app>main:not(.auth)>.listell-product-mask.is-active{
+  opacity:1;
 }
