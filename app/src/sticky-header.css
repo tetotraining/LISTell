@@ -27,20 +27,29 @@
   background:var(--base,#050605);
 }
 
-/* Keep the fixed gap below the count/sort row fully opaque. */
-#app>main:not(.auth)>header::after{
-  content:'';
-  position:absolute;
-  left:0;
-  right:0;
-  bottom:calc(-1 * var(--listell-priority-gap,30px));
-  height:var(--listell-priority-gap,30px);
-  z-index:2;
+/*
+  One continuous fade layer sits above the scrolling products.
+  The first 30px stays fully opaque, then the layer gradually becomes
+  transparent across the rest of the 280px zone. This avoids row-by-row
+  cutoffs and keeps the fixed header area clean.
+*/
+#app>main:not(.auth)>.listell-scroll-fade{
+  position:-webkit-sticky;
+  position:sticky;
+  top:var(--listell-sticky-header-bottom,88px);
+  z-index:7;
+  height:var(--listell-product-fade-distance,280px);
+  margin:0 -22px calc(-1 * var(--listell-product-fade-distance,280px));
   pointer-events:none;
-  background:var(--base,#050605);
+  background:linear-gradient(
+    to bottom,
+    var(--base,#050605) 0,
+    var(--base,#050605) var(--listell-priority-gap,30px),
+    transparent 100%
+  );
 }
 
-/* Group nesting can change after render, so do not depend on direct children. */
+/* Priority labels stay above the product fade layer. */
 #app>main:not(.auth) .priority-group .priority-heading{
   position:-webkit-sticky;
   position:sticky;
@@ -48,10 +57,4 @@
   z-index:8;
   background:var(--base,#050605);
   will-change:opacity;
-}
-
-/* Scroll-linked opacity is applied directly by view-preserve.js. */
-#app>main:not(.auth) .row[data-id]:not(.purchasing){
-  will-change:opacity;
-  transition:none;
 }
