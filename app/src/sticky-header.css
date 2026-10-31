@@ -7,7 +7,7 @@
   --listell-priority-gap:30px;
   --listell-priority-fade-start:44px;
   --listell-priority-fade-end-gap:16px;
-  --listell-product-fade-distance:42px;
+  --listell-product-fade-distance:140px;
 }
 
 #app>main:not(.auth)>header{
