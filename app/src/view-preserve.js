@@ -30,11 +30,32 @@ function smoothstep(value){
   return t*t*(3-2*t);
 }
 
-function removeLegacyProductFade(main){
+function syncProductMask(main,header,activeHeading){
   main.querySelector(':scope > .listell-scroll-fade')?.remove();
   main.querySelectorAll('.row').forEach(row=>{
     if(!row.classList.contains('purchasing'))row.style.removeProperty('opacity');
   });
+
+  let mask=main.querySelector(':scope > .listell-product-mask');
+  if(!main.querySelector('.priority-heading')){
+    mask?.remove();
+    return;
+  }
+
+  if(!mask){
+    mask=document.createElement('div');
+    mask.className='listell-product-mask';
+    mask.setAttribute('aria-hidden','true');
+  }
+  if(mask.previousElementSibling!==header)header.insertAdjacentElement('afterend',mask);
+
+  if(activeHeading){
+    const height=Math.max(1,Math.ceil(activeHeading.getBoundingClientRect().height));
+    main.style.setProperty('--listell-active-priority-height',`${height}px`);
+    mask.classList.add('is-active');
+  }else{
+    mask.classList.remove('is-active');
+  }
 }
 
 function syncScrollFades(){
@@ -44,7 +65,6 @@ function syncScrollFades(){
     const header=main?.querySelector(':scope > header');
     if(!main||!header)return;
     bindMainScroller(main);
-    removeLegacyProductFade(main);
 
     const styles=getComputedStyle(main);
     const gap=parseFloat(styles.getPropertyValue('--listell-priority-gap'))||30;
@@ -52,22 +72,34 @@ function syncScrollFades(){
     const headerTop=parseFloat(getComputedStyle(header).top)||0;
     const headerBottom=Math.max(0,Math.ceil(header.offsetHeight+headerTop));
     const fixedBottom=mainTop+headerBottom;
-    const fullVisibleTop=fixedBottom+gap;
+    const stickyTop=fixedBottom+gap;
+    const fullVisibleTop=stickyTop;
     const fullyHiddenTop=fixedBottom+4;
     const fadeTravel=Math.max(1,fullVisibleTop-fullyHiddenTop);
 
-    // Priority headings are fully visible at their normal sticky position.
-    // When a group ends and pushes its heading upward, fade the heading across
-    // the fixed gap and make it fully invisible before it can reach the meta row.
-    main.querySelectorAll('.priority-heading').forEach(heading=>{
+    const headings=[...main.querySelectorAll('.priority-heading')];
+    let activeHeading=null;
+
+    headings.forEach(heading=>{
       const rect=heading.getBoundingClientRect();
+      const group=heading.closest('.priority-group');
+      const groupRect=group?.getBoundingClientRect();
+
       let opacity=1;
       if(rect.top<fullVisibleTop){
         opacity=smoothstep((rect.top-fullyHiddenTop)/fadeTravel);
       }
       if(rect.top<=fullyHiddenTop)opacity=0;
       heading.style.opacity=String(clamp01(opacity));
+
+      // The product fade must exist only for the heading that is genuinely pinned.
+      // scrollTop > 1 prevents the first group's products from looking faded at rest.
+      if(!activeHeading&&main.scrollTop>1&&groupRect&&rect.top<=stickyTop+1&&groupRect.bottom>stickyTop+rect.height){
+        activeHeading=heading;
+      }
     });
+
+    syncProductMask(main,header,activeHeading);
   });
 }
 
