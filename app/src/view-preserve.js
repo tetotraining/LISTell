@@ -11,6 +11,8 @@ queueMicrotask(()=>{
 
 const MAIN_TABS=['all','list','priority','menu'];
 const MAIN_EYEBROWS=new Set(['ALL LISTS','SHOPPING LIST','FOCUS VIEW','MORE']);
+const TAB_LABELS={all:['ALL LISTS','全リスト'],list:['SHOPPING LIST','リスト'],priority:['FOCUS VIEW','優先度'],menu:['MORE','メニュー']};
+const tabSnapshots=new Map();
 let topAnimationFrame=0;
 let swipeGesture=null;
 let swipeLayer=null;
@@ -49,6 +51,21 @@ function cloneMainForViewport(main,scrollY){
   return clone;
 }
 
+function captureCurrentSnapshot(){
+  if(swipeLayer)return;
+  const tab=currentMainTab();
+  const main=document.querySelector('#app > main');
+  if(!tab||!main)return;
+  tabSnapshots.set(tab,main.cloneNode(true));
+}
+
+function fallbackTargetMain(tab){
+  const [eyebrow,title]=TAB_LABELS[tab]||['LISTELL',''];
+  const main=document.createElement('main');
+  main.innerHTML=`<header><em>${eyebrow}</em><h1>${title}</h1></header>`;
+  return main;
+}
+
 function removeSwipeLayer(){
   swipeLayer?.root?.remove();
   swipeLayer=null;
@@ -61,15 +78,10 @@ function prepareSwipeLayer(targetTab,direction){
   if(!app||!currentMain||!currentTab)return false;
 
   const scrollY=Math.max(window.scrollY,document.documentElement.scrollTop,document.body.scrollTop);
+  tabSnapshots.set(currentTab,currentMain.cloneNode(true));
   const currentClone=cloneMainForViewport(currentMain,scrollY);
-
-  const targetButton=document.querySelector(`nav [data-tab="${targetTab}"]`);
-  if(!targetButton)return false;
-  targetButton.click();
-  const targetMain=document.querySelector('#app > main');
-  const targetClone=targetMain?cloneMainForViewport(targetMain,scrollY):null;
-  document.querySelector(`nav [data-tab="${currentTab}"]`)?.click();
-  if(!targetClone)return false;
+  const storedTarget=tabSnapshots.get(targetTab)?.cloneNode(true)||fallbackTargetMain(targetTab);
+  const targetClone=cloneMainForViewport(storedTarget,scrollY);
 
   const rect=app.getBoundingClientRect();
   const width=Math.max(1,rect.width||window.innerWidth);
@@ -84,7 +96,8 @@ function prepareSwipeLayer(targetTab,direction){
     bottom:'calc(92px + env(safe-area-inset-bottom))',
     overflow:'hidden',
     background:'var(--base,#050605)',
-    pointerEvents:'none'
+    pointerEvents:'none',
+    contain:'layout paint size'
   });
 
   const track=document.createElement('div');
@@ -134,19 +147,29 @@ function finishSwipe(commit){
   layer.targetPage.style.opacity=commit?'1':'.16';
   const targetTab=layer.targetTab;
   setTimeout(()=>{
-    removeSwipeLayer();
     if(commit)document.querySelector(`nav [data-tab="${targetTab}"]`)?.click();
+    removeSwipeLayer();
+    requestAnimationFrame(captureCurrentSnapshot);
   },270);
   swipeGesture=null;
 }
 
 // Re-tapping any of the four main bottom tabs smoothly returns that view to the top.
 document.addEventListener('click',event=>{
-  if(!event.isTrusted)return;
   const tab=event.target?.closest?.('nav [data-tab]')?.dataset.tab;
   if(!MAIN_TABS.includes(tab))return;
-  setTimeout(()=>requestAnimationFrame(()=>requestAnimationFrame(scrollCurrentViewToTop)),20);
+  if(event.isTrusted)setTimeout(()=>requestAnimationFrame(()=>requestAnimationFrame(scrollCurrentViewToTop)),20);
+  setTimeout(()=>requestAnimationFrame(captureCurrentSnapshot),30);
 });
+
+// Cache snapshots after normal renders without switching tabs during a touch gesture.
+const snapshotObserver=new MutationObserver(()=>{
+  if(swipeLayer||swipeGesture?.engaged)return;
+  requestAnimationFrame(captureCurrentSnapshot);
+});
+const observedApp=document.querySelector('#app');
+if(observedApp)snapshotObserver.observe(observedApp,{childList:true,subtree:false});
+requestAnimationFrame(captureCurrentSnapshot);
 
 // Paymo-style horizontal paging across: All Lists -> List -> Priority -> Menu.
 document.addEventListener('touchstart',event=>{
