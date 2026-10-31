@@ -1,3 +1,5 @@
+import './sticky-header.css';
+
 // Keep the active tab when item data is refreshed after an edit.
 queueMicrotask(()=>{
   const refresh=window.__listellRefresh;
