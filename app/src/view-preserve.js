@@ -14,27 +14,67 @@ queueMicrotask(()=>{
 const MAIN_TABS=['all','list','priority','menu'];
 let topAnimationFrame=0;
 let stickyOffsetFrame=0;
-let priorityFadeFrame=0;
+let scrollFadeFrame=0;
 
-function syncPriorityHeadingFade(){
-  cancelAnimationFrame(priorityFadeFrame);
-  priorityFadeFrame=requestAnimationFrame(()=>{
+function syncScrollFades(){
+  cancelAnimationFrame(scrollFadeFrame);
+  scrollFadeFrame=requestAnimationFrame(()=>{
     const main=document.querySelector('#app>main:not(.auth)');
     const header=main?.querySelector(':scope > header');
     if(!main||!header)return;
+
     const styles=getComputedStyle(main);
     const gap=parseFloat(styles.getPropertyValue('--listell-priority-gap'))||30;
-    const fadeEndGap=parseFloat(styles.getPropertyValue('--listell-priority-fade-end-gap'))||12;
+    const priorityFadeStart=parseFloat(styles.getPropertyValue('--listell-priority-fade-start'))||36;
+    const priorityFadeEndGap=parseFloat(styles.getPropertyValue('--listell-priority-fade-end-gap'))||12;
+    const productFadeDistance=parseFloat(styles.getPropertyValue('--listell-product-fade-distance'))||42;
     const mainTop=main.getBoundingClientRect().top;
     const headerTop=parseFloat(getComputedStyle(header).top)||0;
     const headerBottom=Math.max(0,Math.ceil(header.offsetHeight+headerTop));
     const stickyTop=mainTop+headerBottom+gap;
-    const fadeDistance=Math.max(1,gap-fadeEndGap);
-    main.querySelectorAll(':scope > .priority-group .priority-heading').forEach(heading=>{
-      const pushed=Math.max(0,stickyTop-heading.getBoundingClientRect().top);
-      const opacity=Math.max(0,Math.min(1,1-pushed/fadeDistance));
-      heading.style.opacity=String(opacity);
+
+    const groups=[...main.querySelectorAll(':scope > .priority-group')];
+    groups.forEach(group=>{
+      const heading=group.querySelector(':scope > .priority-heading');
+      if(!heading)return;
+
+      const headingRect=heading.getBoundingClientRect();
+      const groupRect=group.getBoundingClientRect();
+      const headingHeight=headingRect.height;
+      const stickyActive=headingRect.top<=stickyTop+1;
+
+      // Fade the priority label BEFORE its parent starts pushing it upward.
+      // This prevents it from ever overlapping the fixed count/sort row.
+      let headingOpacity=1;
+      if(stickyActive){
+        const remaining=groupRect.bottom-(stickyTop+headingHeight);
+        if(remaining<=priorityFadeEndGap)headingOpacity=0;
+        else if(remaining<priorityFadeStart){
+          headingOpacity=(remaining-priorityFadeEndGap)/Math.max(1,priorityFadeStart-priorityFadeEndGap);
+        }
+      }
+      heading.style.opacity=String(Math.max(0,Math.min(1,headingOpacity)));
+
+      // Fade each product row itself as it approaches the fixed priority label.
+      const fadeTop=stickyTop+headingHeight+4;
+      const fadeBottom=fadeTop+productFadeDistance;
+      group.querySelectorAll(':scope > .rows > .row').forEach(row=>{
+        if(row.classList.contains('purchasing'))return;
+        if(!stickyActive){row.style.opacity='1';return}
+        const rowTop=row.getBoundingClientRect().top;
+        let opacity=1;
+        if(rowTop<=fadeTop)opacity=0;
+        else if(rowTop<fadeBottom)opacity=(rowTop-fadeTop)/Math.max(1,fadeBottom-fadeTop);
+        row.style.opacity=String(Math.max(0,Math.min(1,opacity)));
+      });
     });
+
+    // Reset rows when this view is not using priority groups.
+    if(!groups.length){
+      main.querySelectorAll(':scope > .rows > .row').forEach(row=>{
+        if(!row.classList.contains('purchasing'))row.style.opacity='1';
+      });
+    }
   });
 }
 
@@ -47,23 +87,23 @@ function syncPriorityHeadingOffset(){
     const top=parseFloat(getComputedStyle(header).top)||0;
     const stickyBottom=Math.max(0,Math.ceil(header.offsetHeight+top));
     main.style.setProperty('--listell-sticky-header-bottom',`${stickyBottom}px`);
-    syncPriorityHeadingFade();
+    syncScrollFades();
   });
 }
 
 const appRoot=document.querySelector('#app');
 if(appRoot)new MutationObserver(()=>{
   syncPriorityHeadingOffset();
-  syncPriorityHeadingFade();
+  syncScrollFades();
 }).observe(appRoot,{childList:true,subtree:true});
 window.addEventListener('resize',()=>{
   syncPriorityHeadingOffset();
-  syncPriorityHeadingFade();
+  syncScrollFades();
 },{passive:true});
-document.addEventListener('scroll',syncPriorityHeadingFade,{passive:true,capture:true});
+document.addEventListener('scroll',syncScrollFades,{passive:true,capture:true});
 queueMicrotask(()=>{
   syncPriorityHeadingOffset();
-  syncPriorityHeadingFade();
+  syncScrollFades();
 });
 
 function currentScroller(){
@@ -91,7 +131,7 @@ function scrollCurrentViewToTop(){
     const y=start*(1-ease(progress));
     if(scroller===document.scrollingElement||scroller===document.documentElement)window.scrollTo(0,y);
     else scroller.scrollTop=y;
-    syncPriorityHeadingFade();
+    syncScrollFades();
     if(progress<1)topAnimationFrame=requestAnimationFrame(tick);
   };
   topAnimationFrame=requestAnimationFrame(tick);
