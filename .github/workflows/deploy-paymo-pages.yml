@@ -24,9 +24,12 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
-      - name: Install Wrangler
+      - name: Install Paymo dependencies
         working-directory: paymo/app
         run: npm install
+      - name: Build Paymo
+        working-directory: paymo/app
+        run: npm run build
       - name: Deploy Paymo Pages with Functions
         shell: bash
         run: |
@@ -34,7 +37,7 @@ jobs:
           PAYMO_SHA="$(git -C paymo rev-parse HEAD)"
           PAYMO_MESSAGE="$(git -C paymo log -1 --pretty=%s)"
           cd paymo
-          ./app/node_modules/.bin/wrangler pages deploy app/public \
+          ./app/node_modules/.bin/wrangler pages deploy app/dist \
             --project-name=teto-paymo \
             --branch=main \
             --commit-hash="$PAYMO_SHA" \
