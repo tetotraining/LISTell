@@ -15,6 +15,16 @@ const MAIN_TABS=['all','list','priority','menu'];
 let topAnimationFrame=0;
 let stickyOffsetFrame=0;
 let scrollFadeFrame=0;
+let boundMainScroller=null;
+
+function bindMainScroller(main){
+  if(boundMainScroller===main)return;
+  if(boundMainScroller)boundMainScroller.removeEventListener('scroll',syncScrollFades);
+  boundMainScroller=main||null;
+  if(boundMainScroller)boundMainScroller.addEventListener('scroll',syncScrollFades,{passive:true});
+}
+
+function clamp01(value){return Math.max(0,Math.min(1,value))}
 
 function syncScrollFades(){
   cancelAnimationFrame(scrollFadeFrame);
@@ -22,59 +32,57 @@ function syncScrollFades(){
     const main=document.querySelector('#app>main:not(.auth)');
     const header=main?.querySelector(':scope > header');
     if(!main||!header)return;
+    bindMainScroller(main);
 
     const styles=getComputedStyle(main);
     const gap=parseFloat(styles.getPropertyValue('--listell-priority-gap'))||30;
-    const priorityFadeStart=parseFloat(styles.getPropertyValue('--listell-priority-fade-start'))||36;
-    const priorityFadeEndGap=parseFloat(styles.getPropertyValue('--listell-priority-fade-end-gap'))||12;
+    const priorityFadeStart=parseFloat(styles.getPropertyValue('--listell-priority-fade-start'))||44;
+    const priorityFadeEndGap=parseFloat(styles.getPropertyValue('--listell-priority-fade-end-gap'))||16;
     const productFadeDistance=parseFloat(styles.getPropertyValue('--listell-product-fade-distance'))||42;
     const mainTop=main.getBoundingClientRect().top;
     const headerTop=parseFloat(getComputedStyle(header).top)||0;
     const headerBottom=Math.max(0,Math.ceil(header.offsetHeight+headerTop));
     const stickyTop=mainTop+headerBottom+gap;
 
-    const groups=[...main.querySelectorAll(':scope > .priority-group')];
-    groups.forEach(group=>{
-      const heading=group.querySelector(':scope > .priority-heading');
-      if(!heading)return;
-
+    // Priority headings can be nested differently after the rows are grouped.
+    // Fade them out before their sticky parent would push them into the fixed meta row.
+    const headings=[...main.querySelectorAll('.priority-heading')];
+    let headingHeight=0;
+    headings.forEach(heading=>{
+      const group=heading.closest('.priority-group');
       const headingRect=heading.getBoundingClientRect();
+      headingHeight=Math.max(headingHeight,headingRect.height||0);
+      if(!group){heading.style.opacity='1';return}
+
       const groupRect=group.getBoundingClientRect();
-      const headingHeight=headingRect.height;
-      const stickyActive=headingRect.top<=stickyTop+1;
-
-      // Fade the priority label BEFORE its parent starts pushing it upward.
-      // This prevents it from ever overlapping the fixed count/sort row.
-      let headingOpacity=1;
-      if(stickyActive){
-        const remaining=groupRect.bottom-(stickyTop+headingHeight);
-        if(remaining<=priorityFadeEndGap)headingOpacity=0;
+      let opacity=1;
+      if(headingRect.top<=stickyTop+1){
+        const remaining=groupRect.bottom-(stickyTop+headingRect.height);
+        if(remaining<=priorityFadeEndGap)opacity=0;
         else if(remaining<priorityFadeStart){
-          headingOpacity=(remaining-priorityFadeEndGap)/Math.max(1,priorityFadeStart-priorityFadeEndGap);
+          opacity=(remaining-priorityFadeEndGap)/Math.max(1,priorityFadeStart-priorityFadeEndGap);
         }
+        // Never allow a fading heading to travel upward into the fixed count/sort area.
+        if(headingRect.top<stickyTop-1)opacity=0;
       }
-      heading.style.opacity=String(Math.max(0,Math.min(1,headingOpacity)));
-
-      // Fade each product row itself as it approaches the fixed priority label.
-      const fadeTop=stickyTop+headingHeight+4;
-      const fadeBottom=fadeTop+productFadeDistance;
-      group.querySelectorAll(':scope > .rows > .row').forEach(row=>{
-        if(row.classList.contains('purchasing'))return;
-        if(!stickyActive){row.style.opacity='1';return}
-        const rowTop=row.getBoundingClientRect().top;
-        let opacity=1;
-        if(rowTop<=fadeTop)opacity=0;
-        else if(rowTop<fadeBottom)opacity=(rowTop-fadeTop)/Math.max(1,fadeBottom-fadeTop);
-        row.style.opacity=String(Math.max(0,Math.min(1,opacity)));
-      });
+      heading.style.opacity=String(clamp01(opacity));
     });
 
-    // Reset rows when this view is not using priority groups.
-    if(!groups.length){
-      main.querySelectorAll(':scope > .rows > .row').forEach(row=>{
-        if(!row.classList.contains('purchasing'))row.style.opacity='1';
-      });
-    }
+    // Fade the PRODUCT ROW ITSELF. This does not depend on where priority groups
+    // are nested, so it also works after the grouping script rearranges the DOM.
+    const fadeEnd=headings.length
+      ?stickyTop+Math.max(headingHeight,22)+6
+      :mainTop+headerBottom+6;
+    const fadeStart=fadeEnd+productFadeDistance;
+
+    main.querySelectorAll('.row[data-id]').forEach(row=>{
+      if(row.classList.contains('purchasing'))return;
+      const rowTop=row.getBoundingClientRect().top;
+      let opacity=1;
+      if(rowTop<=fadeEnd)opacity=0;
+      else if(rowTop<fadeStart)opacity=(rowTop-fadeEnd)/Math.max(1,fadeStart-fadeEnd);
+      row.style.opacity=String(clamp01(opacity));
+    });
   });
 }
 
@@ -84,6 +92,7 @@ function syncPriorityHeadingOffset(){
     const main=document.querySelector('#app>main:not(.auth)');
     const header=main?.querySelector(':scope > header');
     if(!main||!header)return;
+    bindMainScroller(main);
     const top=parseFloat(getComputedStyle(header).top)||0;
     const stickyBottom=Math.max(0,Math.ceil(header.offsetHeight+top));
     main.style.setProperty('--listell-sticky-header-bottom',`${stickyBottom}px`);
