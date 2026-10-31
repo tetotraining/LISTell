@@ -27,8 +27,7 @@
 
 /*
   The whole gap below the fixed item-count / sort row is fully opaque.
-  Products and divider lines can never pass through this area. Priority labels
-  sit above this cover and still fade via JS as they are pushed toward the meta row.
+  Products, divider lines and priority labels pass underneath this cover.
 */
 #app>main:not(.auth)>header::after{
   content:'';
@@ -48,21 +47,24 @@
   display:none!important;
 }
 
-/* Priority labels stay above the opaque gap cover while their group exists. */
+/*
+  Priority labels stay below the fixed header stacking layer. While pinned they
+  remain visible beneath the 30px gap; when their group pushes them upward they
+  slide underneath the opaque cover instead of drawing over it.
+*/
 #app>main:not(.auth) .priority-group .priority-heading{
   position:-webkit-sticky;
   position:sticky;
   top:calc(var(--listell-sticky-header-bottom,88px) + var(--listell-priority-gap,30px));
-  z-index:10;
+  z-index:8;
   background:var(--base,#050605);
   will-change:opacity;
 }
 
 /*
   Only the priority heading that is actually pinned gets the product fade.
-  The fixed header already owns the fully opaque 30px cover above the heading,
-  so no heading-attached upper mask is needed. This prevents that mask from ever
-  covering the item-count / sort row while a group is being pushed out.
+  The fixed header owns the opaque cover above it, so the label and products
+  both disappear underneath that cover without overlapping the fixed meta row.
 */
 #app>main:not(.auth) .priority-group .priority-heading.is-pinned::after{
   content:'';
