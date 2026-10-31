@@ -18,7 +18,7 @@
   background:var(--base,#050605);
 }
 
-/* Keep item count / sort fully readable and above everything that scrolls. */
+/* Keep item count / sort fully readable and above scrolling products. */
 #app>main:not(.auth)>header .meta{
   position:relative;
   z-index:2;
@@ -26,9 +26,9 @@
 }
 
 /*
-  Fade a priority heading itself before it can visually overlap the fixed
-  item-count / sort row. The top of the gap is fully covered; the lower edge
-  fades out so the heading disappears smoothly while being pushed upward.
+  The whole gap below the fixed item-count / sort row is fully opaque.
+  Products and divider lines can never pass through this area. Priority labels
+  sit above this cover and still fade via JS as they are pushed toward the meta row.
 */
 #app>main:not(.auth)>header::after{
   content:'';
@@ -39,13 +39,7 @@
   height:var(--listell-priority-gap,30px);
   z-index:1;
   pointer-events:none;
-  background:linear-gradient(
-    to bottom,
-    var(--base,#050605) 0%,
-    color-mix(in srgb,var(--base,#050605) 92%,transparent) 30%,
-    color-mix(in srgb,var(--base,#050605) 55%,transparent) 66%,
-    transparent 100%
-  );
+  background:var(--base,#050605);
 }
 
 /* Remove the previous detached fade layers. */
@@ -54,12 +48,12 @@
   display:none!important;
 }
 
-/* Priority labels stay fixed below the count/sort row while their group exists. */
+/* Priority labels stay above the opaque gap cover while their group exists. */
 #app>main:not(.auth) .priority-group .priority-heading{
   position:-webkit-sticky;
   position:sticky;
   top:calc(var(--listell-sticky-header-bottom,88px) + var(--listell-priority-gap,30px));
-  z-index:8;
+  z-index:10;
   background:var(--base,#050605);
   will-change:opacity;
 }
