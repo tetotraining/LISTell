@@ -42,28 +42,24 @@ jobs:
             --branch=main \
             --commit-hash="$PAYMO_SHA" \
             --commit-message="$PAYMO_MESSAGE"
-      - name: Verify iOS status bar fix in production
+      - name: Verify Paymo production
         shell: bash
         run: |
           set -e
           for i in $(seq 1 20); do
             ts=$(date +%s)
             html_status="$(curl -sS --max-time 10 -o /tmp/paymo-index.html -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/?ts=$ts" || true)"
-            marker_status="$(curl -sS --max-time 10 -o /tmp/statusbar-marker.txt -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/statusbar-sync-marker.txt?ts=$ts" || true)"
+            d1_status="$(curl -sS --max-time 10 -o /tmp/paymo-d1.js -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/paymo-d1.js?ts=$ts" || true)"
             auth_status="$(curl -sS --max-time 10 -o /tmp/paymo-me.json -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/api/me?ts=$ts" || true)"
-            echo "attempt=$i html=$html_status marker=$marker_status auth=$auth_status"
+            echo "attempt=$i html=$html_status d1=$d1_status auth=$auth_status"
             if [ "$html_status" = "200" ] \
-              && [ "$marker_status" = "200" ] \
-              && grep -q 'paymo-statusbar-sync-20261101-v1' /tmp/statusbar-marker.txt \
+              && [ "$d1_status" = "200" ] \
               && [ "$auth_status" = "401" ] \
-              && ! grep -Eqi '<meta[^>]+apple-mobile-web-app-status-bar-style' /tmp/paymo-index.html \
-              && grep -q 'paymo-theme-reload-sync' /tmp/paymo-index.html; then
-              echo "Paymo Pages direct deployment verified with the iOS status bar reload workaround."
+              && grep -Fq "if (before === next) return;" /tmp/paymo-d1.js; then
+              echo "Paymo production verified with graph rerender guard."
               exit 0
             fi
             sleep 5
           done
-          echo "Paymo Pages direct deployment verification failed."
-          echo "status meta tag count: $(grep -Eic '<meta[^>]+apple-mobile-web-app-status-bar-style' /tmp/paymo-index.html || true)"
-          echo "reload marker count: $(grep -c 'paymo-theme-reload-sync' /tmp/paymo-index.html || true)"
+          echo "Paymo production verification failed."
           exit 1
