@@ -25,6 +25,10 @@ function bindMainScroller(main){
 }
 
 function clamp01(value){return Math.max(0,Math.min(1,value))}
+function smoothstep(value){
+  const t=clamp01(value);
+  return t*t*(3-2*t);
+}
 
 function syncScrollFades(){
   cancelAnimationFrame(scrollFadeFrame);
@@ -38,7 +42,7 @@ function syncScrollFades(){
     const gap=parseFloat(styles.getPropertyValue('--listell-priority-gap'))||30;
     const priorityFadeStart=parseFloat(styles.getPropertyValue('--listell-priority-fade-start'))||44;
     const priorityFadeEndGap=parseFloat(styles.getPropertyValue('--listell-priority-fade-end-gap'))||16;
-    const productFadeDistance=parseFloat(styles.getPropertyValue('--listell-product-fade-distance'))||42;
+    const productFadeDistance=parseFloat(styles.getPropertyValue('--listell-product-fade-distance'))||140;
     const mainTop=main.getBoundingClientRect().top;
     const headerTop=parseFloat(getComputedStyle(header).top)||0;
     const headerBottom=Math.max(0,Math.ceil(header.offsetHeight+headerTop));
@@ -68,8 +72,7 @@ function syncScrollFades(){
       heading.style.opacity=String(clamp01(opacity));
     });
 
-    // Fade the PRODUCT ROW ITSELF. This does not depend on where priority groups
-    // are nested, so it also works after the grouping script rearranges the DOM.
+    // Fade each product gradually over a longer scroll distance.
     const fadeEnd=headings.length
       ?stickyTop+Math.max(headingHeight,22)+6
       :mainTop+headerBottom+6;
@@ -80,8 +83,10 @@ function syncScrollFades(){
       const rowTop=row.getBoundingClientRect().top;
       let opacity=1;
       if(rowTop<=fadeEnd)opacity=0;
-      else if(rowTop<fadeStart)opacity=(rowTop-fadeEnd)/Math.max(1,fadeStart-fadeEnd);
-      row.style.opacity=String(clamp01(opacity));
+      else if(rowTop<fadeStart){
+        opacity=smoothstep((rowTop-fadeEnd)/Math.max(1,productFadeDistance));
+      }
+      row.style.opacity=String(opacity);
     });
   });
 }
