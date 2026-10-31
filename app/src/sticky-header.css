@@ -1,6 +1,15 @@
+#app>main:not(.auth){
+  height:100dvh;
+  min-height:0;
+  overflow-y:auto;
+  -webkit-overflow-scrolling:touch;
+  overscroll-behavior-y:contain;
+}
+
 #app>main:not(.auth)>header{
+  position:-webkit-sticky;
   position:sticky;
-  top:0;
+  top:-28px;
   z-index:9;
   margin:-28px -22px 0;
   padding:28px 22px 1px;
