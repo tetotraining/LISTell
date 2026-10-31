@@ -15,3 +15,14 @@
   padding:28px 22px 1px;
   background:var(--base,#050605);
 }
+
+#app>main:not(.auth)>header::after{
+  content:'';
+  position:absolute;
+  left:0;
+  right:0;
+  bottom:-36px;
+  height:36px;
+  pointer-events:none;
+  background:linear-gradient(to bottom,var(--base,#050605) 0%,color-mix(in srgb,var(--base,#050605) 78%,transparent) 30%,color-mix(in srgb,var(--base,#050605) 38%,transparent) 68%,transparent 100%);
+}
