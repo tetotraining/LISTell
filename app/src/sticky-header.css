@@ -5,8 +5,8 @@
   -webkit-overflow-scrolling:touch;
   overscroll-behavior-y:contain;
   --listell-priority-gap:30px;
-  --listell-priority-fade-start:36px;
-  --listell-priority-fade-end-gap:12px;
+  --listell-priority-fade-start:44px;
+  --listell-priority-fade-end-gap:16px;
   --listell-product-fade-distance:42px;
 }
 
@@ -27,10 +27,7 @@
   background:var(--base,#050605);
 }
 
-/*
-  The fixed gap below the header is fully opaque. Product fading is handled
-  on the product rows themselves, so nothing can show through this gap.
-*/
+/* Keep the fixed gap below the count/sort row fully opaque. */
 #app>main:not(.auth)>header::after{
   content:'';
   position:absolute;
@@ -43,8 +40,8 @@
   background:var(--base,#050605);
 }
 
-/* Keep the priority label at a fixed gap below the complete fixed header. */
-#app>main:not(.auth)>.priority-group .priority-heading{
+/* Group nesting can change after render, so do not depend on direct children. */
+#app>main:not(.auth) .priority-group .priority-heading{
   position:-webkit-sticky;
   position:sticky;
   top:calc(var(--listell-sticky-header-bottom,88px) + var(--listell-priority-gap,30px));
@@ -54,7 +51,7 @@
 }
 
 /* Scroll-linked opacity is applied directly by view-preserve.js. */
-#app>main:not(.auth)>.priority-group .row:not(.purchasing){
+#app>main:not(.auth) .row[data-id]:not(.purchasing){
   will-change:opacity;
   transition:none;
 }
