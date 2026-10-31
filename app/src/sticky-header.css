@@ -16,6 +16,14 @@
   background:var(--base,#050605);
 }
 
+/* Keep the All Lists count/sort row inside the pinned header. */
+#app>main:not(.auth)>header .meta{
+  position:relative;
+  z-index:1;
+  background:var(--base,#050605);
+}
+
+/* Fade only the scrolling content below the complete fixed header. */
 #app>main:not(.auth)>header::after{
   content:'';
   position:absolute;
@@ -23,6 +31,7 @@
   right:0;
   bottom:-36px;
   height:36px;
+  z-index:2;
   pointer-events:none;
   background:linear-gradient(to bottom,var(--base,#050605) 0%,color-mix(in srgb,var(--base,#050605) 78%,transparent) 30%,color-mix(in srgb,var(--base,#050605) 38%,transparent) 68%,transparent 100%);
 }
@@ -33,4 +42,5 @@
   top:var(--listell-sticky-header-bottom,88px);
   z-index:10;
   background:var(--base,#050605);
+  will-change:opacity;
 }
