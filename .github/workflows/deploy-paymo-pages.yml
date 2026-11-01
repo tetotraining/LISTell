@@ -24,6 +24,27 @@ jobs:
       - uses: actions/setup-node@v4
         with:
           node-version: 22
+      - name: Verify Paymo source integrity
+        shell: bash
+        run: |
+          set -euo pipefail
+          for public_file in paymo/app/public/paymo-*.js; do
+            base="$(basename "$public_file")"
+            root_file="paymo/$base"
+            if [ -f "$root_file" ]; then
+              cmp -s "$root_file" "$public_file" || {
+                echo "Mirror mismatch: $root_file <-> $public_file"
+                exit 1
+              }
+            fi
+          done
+          grep -q 'primeLegacyHistoryTargets' paymo/app/public/paymo-integrity-fixes.js
+          grep -q 'history-delete-confirm-backdrop{z-index:950' paymo/app/public/paymo-integrity-fixes.js
+          grep -q 'paymo-expenses-updated' paymo/app/public/paymo-integrity-fixes.js
+          grep -q 'bulk-delete' paymo/app/public/paymo-integrity-fixes.js
+          grep -q 'authorization' paymo/app/public/paymo-integrity-fixes.js
+          grep -q 'sameAmountAndDate' paymo/app/public/paymo-integrity-fixes.js
+          grep -q '/paymo-integrity-fixes.js' paymo/functions/_middleware.js
       - name: Install Paymo dependencies
         working-directory: paymo/app
         run: npm install
@@ -45,23 +66,33 @@ jobs:
       - name: Verify Paymo production
         shell: bash
         run: |
-          set -e
+          set -euo pipefail
+          expected_integrity="$(sha256sum paymo/app/public/paymo-integrity-fixes.js | awk '{print $1}')"
+          expected_paid="$(sha256sum paymo/app/public/paymo-paid.js | awk '{print $1}')"
+          expected_items="$(sha256sum paymo/app/public/paymo-items.js | awk '{print $1}')"
           for i in $(seq 1 20); do
             ts=$(date +%s)
             html_status="$(curl -sS --max-time 10 -o /tmp/paymo-index.html -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/?ts=$ts" || true)"
-            graph_edit_status="$(curl -sS --max-time 10 -o /tmp/paymo-graph-detail-edit.js -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/paymo-graph-detail-edit.js?ts=$ts" || true)"
+            integrity_status="$(curl -sS --max-time 10 -o /tmp/paymo-integrity-fixes.js -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/paymo-integrity-fixes.js?ts=$ts" || true)"
             paid_status="$(curl -sS --max-time 10 -o /tmp/paymo-paid.js -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/paymo-paid.js?ts=$ts" || true)"
+            items_status="$(curl -sS --max-time 10 -o /tmp/paymo-items.js -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/paymo-items.js?ts=$ts" || true)"
             auth_status="$(curl -sS --max-time 10 -o /tmp/paymo-me.json -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/api/me?ts=$ts" || true)"
-            echo "attempt=$i html=$html_status graph_edit=$graph_edit_status paid=$paid_status auth=$auth_status"
+            echo "attempt=$i html=$html_status integrity=$integrity_status paid=$paid_status items=$items_status auth=$auth_status"
             if [ "$html_status" = "200" ] \
-              && [ "$graph_edit_status" = "200" ] \
+              && [ "$integrity_status" = "200" ] \
               && [ "$paid_status" = "200" ] \
+              && [ "$items_status" = "200" ] \
               && [ "$auth_status" = "401" ] \
-              && grep -Fq "historyRow.click();" /tmp/paymo-graph-detail-edit.js \
-              && grep -Fq "activeExpenseId = String(row.dataset.expenseId || '');" /tmp/paymo-paid.js \
-              && grep -Fq "history-edit-sheet{z-index:901!important}" /tmp/paymo-graph-detail-edit.js \
-              && ! grep -Fq "back.click();" /tmp/paymo-graph-detail-edit.js; then
-              echo "Paymo production verified with paid toggle target fix from graph detail."
+              && [ "$(sha256sum /tmp/paymo-integrity-fixes.js | awk '{print $1}')" = "$expected_integrity" ] \
+              && [ "$(sha256sum /tmp/paymo-paid.js | awk '{print $1}')" = "$expected_paid" ] \
+              && [ "$(sha256sum /tmp/paymo-items.js | awk '{print $1}')" = "$expected_items" ] \
+              && grep -Fq '/paymo-integrity-fixes.js' /tmp/paymo-index.html \
+              && grep -Fq 'paymoIntegrityStatus' /tmp/paymo-integrity-fixes.js \
+              && grep -Fq 'primeLegacyHistoryTargets' /tmp/paymo-integrity-fixes.js \
+              && grep -Fq 'history-delete-confirm-backdrop{z-index:950' /tmp/paymo-integrity-fixes.js \
+              && grep -Fq 'sameAmountAndDate' /tmp/paymo-integrity-fixes.js \
+              && grep -Fq 'overdueItems' /tmp/paymo-paid.js; then
+              echo "Paymo production verified with interaction integrity fixes."
               exit 0
             fi
             sleep 5
