@@ -4,6 +4,13 @@ export default {
       name: 'listell-fast-history-bridge',
       enforce: 'pre',
       transform(code, id) {
+        if (id.endsWith('/src/prompt-replacements.js')) {
+          const next=code.replaceAll(
+            "const list=(await request('lists',undefined,'GET')).lists[0];if(list){await request(`lists/${list.id}/members/",
+            "const listId=localStorage.getItem('listell_selected_list_id');if(listId){await request(`lists/${listId}/members/"
+          );
+          return next===code?null:{code:next,map:null};
+        }
         if (!id.endsWith('/src/main.js')) return null;
         let next=code;
         if (!next.includes("import './recovery-flow.js';")) {
