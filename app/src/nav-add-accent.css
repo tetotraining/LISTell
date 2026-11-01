@@ -5,3 +5,4 @@ nav button[data-tab="add"] b::before{width:46px;height:4px}
 nav button[data-tab="add"] b::after{width:4px;height:46px}
 nav button[data-tab="add"] span{display:none}
 nav button[data-tab="add"]:disabled{opacity:.4}
+#listManagementCard:not(:has(#renameList)) #changeListIcon{display:none!important}
