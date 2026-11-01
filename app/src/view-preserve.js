@@ -151,10 +151,15 @@ function scrollCurrentViewToTop(){
   topAnimationFrame=requestAnimationFrame(tick);
 }
 
-// Re-tapping any of the four main bottom tabs smoothly returns that view to the top.
+// Re-tapping the active bottom tab smoothly returns the current view to the top.
+// Capture the tap before main.js redraws the same tab, otherwise its scroll position
+// would jump to 0 immediately and the animation would never be visible.
 document.addEventListener('click',event=>{
   if(!event.isTrusted)return;
-  const tab=event.target?.closest?.('nav [data-tab]')?.dataset.tab;
-  if(!MAIN_TABS.includes(tab))return;
-  setTimeout(()=>requestAnimationFrame(()=>requestAnimationFrame(scrollCurrentViewToTop)),20);
-});
+  const button=event.target?.closest?.('nav [data-tab]');
+  const tab=button?.dataset.tab;
+  if(!button?.classList.contains('on')||!MAIN_TABS.includes(tab))return;
+  event.preventDefault();
+  event.stopImmediatePropagation();
+  scrollCurrentViewToTop();
+},true);
