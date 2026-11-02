@@ -46,6 +46,8 @@ jobs:
           grep -q 'sameAmountAndDate' paymo/app/public/paymo-integrity-fixes.js
           grep -q '/paymo-integrity-fixes.js' paymo/functions/_middleware.js
           grep -Fq "category-history-row.is-paid .category-history-amount{color:#22a559!important}" paymo/app/public/paymo-category-spend.js
+          grep -Fq '/paymo-monthly-summary-notifications.js' paymo/functions/_middleware.js
+          grep -Fq '/api/monthly-summary-settings' paymo/app/public/paymo-monthly-summary-notifications.js
       - name: Install Paymo dependencies
         working-directory: paymo/app
         run: npm install
@@ -72,6 +74,7 @@ jobs:
           expected_paid="$(sha256sum paymo/app/public/paymo-paid.js | awk '{print $1}')"
           expected_items="$(sha256sum paymo/app/public/paymo-items.js | awk '{print $1}')"
           expected_category_spend="$(sha256sum paymo/app/public/paymo-category-spend.js | awk '{print $1}')"
+          expected_monthly="$(sha256sum paymo/app/public/paymo-monthly-summary-notifications.js | awk '{print $1}')"
           for i in $(seq 1 20); do
             ts=$(date +%s)
             html_status="$(curl -sS --max-time 10 -o /tmp/paymo-index.html -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/?ts=$ts" || true)"
@@ -79,26 +82,33 @@ jobs:
             paid_status="$(curl -sS --max-time 10 -o /tmp/paymo-paid.js -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/paymo-paid.js?ts=$ts" || true)"
             items_status="$(curl -sS --max-time 10 -o /tmp/paymo-items.js -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/paymo-items.js?ts=$ts" || true)"
             category_spend_status="$(curl -sS --max-time 10 -o /tmp/paymo-category-spend.js -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/paymo-category-spend.js?ts=$ts" || true)"
+            monthly_file_status="$(curl -sS --max-time 10 -o /tmp/paymo-monthly-summary-notifications.js -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/paymo-monthly-summary-notifications.js?ts=$ts" || true)"
             auth_status="$(curl -sS --max-time 10 -o /tmp/paymo-me.json -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/api/me?ts=$ts" || true)"
-            echo "attempt=$i html=$html_status integrity=$integrity_status paid=$paid_status items=$items_status category_spend=$category_spend_status auth=$auth_status"
+            monthly_api_status="$(curl -sS --max-time 10 -o /tmp/paymo-monthly-api.json -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/api/monthly-summary-settings?ts=$ts" || true)"
+            echo "attempt=$i html=$html_status integrity=$integrity_status paid=$paid_status items=$items_status category_spend=$category_spend_status monthly_file=$monthly_file_status auth=$auth_status monthly_api=$monthly_api_status"
             if [ "$html_status" = "200" ] \
               && [ "$integrity_status" = "200" ] \
               && [ "$paid_status" = "200" ] \
               && [ "$items_status" = "200" ] \
               && [ "$category_spend_status" = "200" ] \
+              && [ "$monthly_file_status" = "200" ] \
               && [ "$auth_status" = "401" ] \
+              && [ "$monthly_api_status" = "401" ] \
               && [ "$(sha256sum /tmp/paymo-integrity-fixes.js | awk '{print $1}')" = "$expected_integrity" ] \
               && [ "$(sha256sum /tmp/paymo-paid.js | awk '{print $1}')" = "$expected_paid" ] \
               && [ "$(sha256sum /tmp/paymo-items.js | awk '{print $1}')" = "$expected_items" ] \
               && [ "$(sha256sum /tmp/paymo-category-spend.js | awk '{print $1}')" = "$expected_category_spend" ] \
+              && [ "$(sha256sum /tmp/paymo-monthly-summary-notifications.js | awk '{print $1}')" = "$expected_monthly" ] \
               && grep -Fq '/paymo-integrity-fixes.js' /tmp/paymo-index.html \
+              && grep -Fq '/paymo-monthly-summary-notifications.js' /tmp/paymo-index.html \
               && grep -Fq 'paymoIntegrityStatus' /tmp/paymo-integrity-fixes.js \
               && grep -Fq 'primeLegacyHistoryTargets' /tmp/paymo-integrity-fixes.js \
               && grep -Fq 'history-delete-confirm-backdrop{z-index:950' /tmp/paymo-integrity-fixes.js \
               && grep -Fq 'sameAmountAndDate' /tmp/paymo-integrity-fixes.js \
               && grep -Fq 'overdueItems' /tmp/paymo-paid.js \
-              && grep -Fq "category-history-row.is-paid .category-history-amount{color:#22a559!important}" /tmp/paymo-category-spend.js; then
-              echo "Paymo production verified with interaction integrity fixes and paid category history amount color."
+              && grep -Fq "category-history-row.is-paid .category-history-amount{color:#22a559!important}" /tmp/paymo-category-spend.js \
+              && grep -Fq 'paymoMonthlySummaryEnabled' /tmp/paymo-monthly-summary-notifications.js; then
+              echo "Paymo production verified with monthly summary notification settings."
               exit 0
             fi
             sleep 5
