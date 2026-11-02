@@ -110,11 +110,13 @@ jobs:
             me_status="$(curl -sS -o /tmp/paymo-api-me.json -w '%{http_code}' https://paymo-api.teto-training.workers.dev/api/me || true)"
             delete_status="$(curl -sS -X DELETE -o /tmp/paymo-api-delete.json -w '%{http_code}' https://paymo-api.teto-training.workers.dev/api/account || true)"
             notification_status="$(curl -sS -o /tmp/paymo-api-notification.json -w '%{http_code}' https://paymo-api.teto-training.workers.dev/api/notification-settings || true)"
-            echo "attempt=$i me=$me_status delete=$delete_status notification=$notification_status"
-            if [ "$me_status" = "401" ] && [ "$delete_status" = "401" ] && [ "$notification_status" = "401" ]; then
+            monthly_status="$(curl -sS -o /tmp/paymo-api-monthly.json -w '%{http_code}' https://paymo-api.teto-training.workers.dev/api/monthly-summary-settings || true)"
+            echo "attempt=$i me=$me_status delete=$delete_status notification=$notification_status monthly=$monthly_status"
+            if [ "$me_status" = "401" ] && [ "$delete_status" = "401" ] && [ "$notification_status" = "401" ] && [ "$monthly_status" = "401" ]; then
               cat /tmp/paymo-api-me.json
               cat /tmp/paymo-api-delete.json
               cat /tmp/paymo-api-notification.json
+              cat /tmp/paymo-api-monthly.json
               exit 0
             fi
             sleep 3
@@ -122,6 +124,7 @@ jobs:
           cat /tmp/paymo-api-me.json || true
           cat /tmp/paymo-api-delete.json || true
           cat /tmp/paymo-api-notification.json || true
+          cat /tmp/paymo-api-monthly.json || true
           exit 1
 
-# Retrigger: notification dedicated page + per-day toggles
+# Retrigger: monthly payment summary notification
