@@ -1,4 +1,5 @@
 import './sticky-header.css';
+import './sliding-pill.js';
 
 // Keep the active tab when item data is refreshed after an edit.
 queueMicrotask(()=>{
