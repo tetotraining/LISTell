@@ -29,7 +29,7 @@
   The whole gap below the fixed item-count / sort row is fully opaque.
   Products, divider lines and priority labels pass underneath this cover.
 */
-#app>main:not(.auth)>header::after{
+#app>main:not(.auth)>header:has(> .meta)::after{
   content:'';
   position:absolute;
   left:0;
