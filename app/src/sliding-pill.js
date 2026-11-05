@@ -100,7 +100,12 @@ function onPointerUp(event) {
   const gesture = drag;
   if (!gesture || event.pointerId !== gesture.pointerId) return;
   drag = null;
-  if (!gesture.engaged || !gesture.nav.isConnected) return;
+  if (!gesture.nav.isConnected) return;
+  if (!gesture.engaged) {
+    const active = gesture.nav.querySelector('button[data-tab].on');
+    if (active) slide(gesture.pill, gesture.origin, centerOf(active), 220);
+    return;
+  }
 
   gesture.current = dragPosition(gesture, event.clientX);
   const nearest = gesture.buttons.reduce((best, button) =>
