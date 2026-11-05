@@ -50,6 +50,10 @@ jobs:
           grep -Fq '/api/monthly-summary-settings' paymo/app/public/paymo-monthly-summary-notifications.js
           node --check paymo/app/public/paymo-graph-detail.js
           node --check paymo/app/public/paymo-graph-detail-edit.js
+          node --check paymo/app/public/paymo-graph-detail-size.js
+          grep -Fq 'paymo-graph-detail-rotate-icon' paymo/app/public/paymo-graph-detail.js
+          grep -Fq '<span>支出日</span><span>支払期日</span><span>項目名</span><span>金額</span>' paymo/app/public/paymo-graph-detail-edit.js
+          grep -Fq 'grid-template-columns:48px 62px minmax(0,1fr) 94px' paymo/app/public/paymo-graph-detail-size.js
           grep -Fq 'paymoGraphDetailToggleView' paymo/app/public/paymo-graph-detail.js
           grep -Fq 'paymoGraphDetailToggleSort' paymo/app/public/paymo-graph-detail.js
           grep -Fq 'usageDateGroups' paymo/app/public/paymo-graph-detail.js
@@ -86,6 +90,7 @@ jobs:
           expected_monthly="$(sha256sum paymo/app/public/paymo-monthly-summary-notifications.js | awk '{print $1}')"
           expected_graph_detail="$(sha256sum paymo/app/public/paymo-graph-detail.js | awk '{print $1}')"
           expected_graph_edit="$(sha256sum paymo/app/public/paymo-graph-detail-edit.js | awk '{print $1}')"
+          expected_graph_size="$(sha256sum paymo/app/public/paymo-graph-detail-size.js | awk '{print $1}')"
           expected_mobile="$(sha256sum paymo/app/public/paymo-mobile-ui.js | awk '{print $1}')"
           expected_nav_scroll="$(sha256sum paymo/app/public/paymo-nav-scroll-top.js | awk '{print $1}')"
           for i in $(seq 1 20); do
@@ -98,11 +103,12 @@ jobs:
             monthly_file_status="$(curl -sS --max-time 10 -o /tmp/paymo-monthly-summary-notifications.js -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/paymo-monthly-summary-notifications.js?ts=$ts" || true)"
             graph_detail_status="$(curl -sS --max-time 10 -o /tmp/paymo-graph-detail.js -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/paymo-graph-detail.js?ts=$ts" || true)"
             graph_edit_status="$(curl -sS --max-time 10 -o /tmp/paymo-graph-detail-edit.js -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/paymo-graph-detail-edit.js?ts=$ts" || true)"
+            graph_size_status="$(curl -sS --max-time 10 -o /tmp/paymo-graph-detail-size.js -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/paymo-graph-detail-size.js?ts=$ts" || true)"
             mobile_status="$(curl -sS --max-time 10 -o /tmp/paymo-mobile-ui.js -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/paymo-mobile-ui.js?ts=$ts" || true)"
             nav_scroll_status="$(curl -sS --max-time 10 -o /tmp/paymo-nav-scroll-top.js -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/paymo-nav-scroll-top.js?ts=$ts" || true)"
             auth_status="$(curl -sS --max-time 10 -o /tmp/paymo-me.json -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/api/me?ts=$ts" || true)"
             monthly_api_status="$(curl -sS --max-time 10 -o /tmp/paymo-monthly-api.json -w '%{http_code}' -H 'Cache-Control: no-cache' "https://teto-paymo.pages.dev/api/monthly-summary-settings?ts=$ts" || true)"
-            echo "attempt=$i html=$html_status integrity=$integrity_status paid=$paid_status items=$items_status category_spend=$category_spend_status monthly_file=$monthly_file_status graph_detail=$graph_detail_status graph_edit=$graph_edit_status mobile=$mobile_status nav_scroll=$nav_scroll_status auth=$auth_status monthly_api=$monthly_api_status"
+            echo "attempt=$i html=$html_status integrity=$integrity_status paid=$paid_status items=$items_status category_spend=$category_spend_status monthly_file=$monthly_file_status graph_detail=$graph_detail_status graph_edit=$graph_edit_status graph_size=$graph_size_status mobile=$mobile_status nav_scroll=$nav_scroll_status auth=$auth_status monthly_api=$monthly_api_status"
             if [ "$html_status" = "200" ] \
               && [ "$integrity_status" = "200" ] \
               && [ "$paid_status" = "200" ] \
@@ -111,6 +117,7 @@ jobs:
               && [ "$monthly_file_status" = "200" ] \
               && [ "$graph_detail_status" = "200" ] \
               && [ "$graph_edit_status" = "200" ] \
+              && [ "$graph_size_status" = "200" ] \
               && [ "$mobile_status" = "200" ] \
               && [ "$nav_scroll_status" = "200" ] \
               && [ "$auth_status" = "401" ] \
@@ -122,6 +129,7 @@ jobs:
               && [ "$(sha256sum /tmp/paymo-monthly-summary-notifications.js | awk '{print $1}')" = "$expected_monthly" ] \
               && [ "$(sha256sum /tmp/paymo-graph-detail.js | awk '{print $1}')" = "$expected_graph_detail" ] \
               && [ "$(sha256sum /tmp/paymo-graph-detail-edit.js | awk '{print $1}')" = "$expected_graph_edit" ] \
+              && [ "$(sha256sum /tmp/paymo-graph-detail-size.js | awk '{print $1}')" = "$expected_graph_size" ] \
               && [ "$(sha256sum /tmp/paymo-mobile-ui.js | awk '{print $1}')" = "$expected_mobile" ] \
               && [ "$(sha256sum /tmp/paymo-nav-scroll-top.js | awk '{print $1}')" = "$expected_nav_scroll" ] \
               && grep -Fq '/paymo-integrity-fixes.js' /tmp/paymo-index.html \
@@ -136,10 +144,13 @@ jobs:
               && grep -Fq 'paymoGraphDetailToggleView' /tmp/paymo-graph-detail.js \
               && grep -Fq 'usageDateGroups' /tmp/paymo-graph-detail.js \
               && grep -Fq 'dateGrouped' /tmp/paymo-graph-detail-edit.js \
+              && grep -Fq 'paymo-graph-detail-rotate-icon' /tmp/paymo-graph-detail.js \
+              && grep -Fq '<span>支出日</span><span>支払期日</span><span>項目名</span><span>金額</span>' /tmp/paymo-graph-detail-edit.js \
+              && grep -Fq 'grid-template-columns:48px 62px minmax(0,1fr) 94px' /tmp/paymo-graph-detail-size.js \
               && grep -Fq 'overscroll-behavior-y:none' /tmp/paymo-mobile-ui.js \
               && grep -Fq 'overflow:hidden!important' /tmp/paymo-mobile-ui.js \
               && grep -Fq "const scroller = document.querySelector('.app')" /tmp/paymo-nav-scroll-top.js; then
-              echo "Paymo production verified, including grouping and sorting for expense trend detail."
+              echo "Paymo production verified: clockwise icon and four date-based expense columns."
               exit 0
             fi
             sleep 5
