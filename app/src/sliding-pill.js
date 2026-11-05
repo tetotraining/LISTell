@@ -53,7 +53,7 @@ function syncSlidingPill() {
 }
 function onPointerDown(event) {
   if (!event.isPrimary || (event.pointerType === 'mouse' && event.button !== 0)) return;
-  const button = event.target?.closest?.('nav.listell-sliding-nav button.on[data-tab]');
+  const button = event.target?.closest?.('nav.listell-sliding-nav button[data-tab]');
   if (!button || !TABS.includes(button.dataset.tab)) return;
   const nav = button.closest('nav');
   const pill = nav?.querySelector(':scope > .listell-sliding-pill');
@@ -70,7 +70,8 @@ function onPointerDown(event) {
   drag = {
     pointerId: event.pointerId, nav, pill, buttons,
     startX: event.clientX, startY: event.clientY,
-    origin, current: origin, engaged: false
+    origin: button.classList.contains('on') ? origin : centerOf(button),
+    current: origin, engaged: false
   };
 }
 function dragPosition(gesture, clientX) {
@@ -103,7 +104,7 @@ function onPointerUp(event) {
   if (!gesture.nav.isConnected) return;
   if (!gesture.engaged) {
     const active = gesture.nav.querySelector('button[data-tab].on');
-    if (active) slide(gesture.pill, gesture.origin, centerOf(active), 220);
+    if (active) slide(gesture.pill, gesture.current, centerOf(active), 220);
     return;
   }
 
