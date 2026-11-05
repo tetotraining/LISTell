@@ -52,6 +52,7 @@ jobs:
           node --check paymo/app/public/paymo-graph-detail-edit.js
           node --check paymo/app/public/paymo-graph-detail-size.js
           grep -Fq 'paymo-graph-detail-rotate-icon' paymo/app/public/paymo-graph-detail.js
+          grep -Fq '#paymoGraphDetailToggleView{color:var(--accent,#B9F486)}' paymo/app/public/paymo-graph-detail.js
           grep -Fq 'M11.8 25.4C15.2 14.1' paymo/app/public/paymo-graph-detail.js
           grep -Fq 'M52.2 38.4C49 49.8' paymo/app/public/paymo-graph-detail.js
           grep -Fq '<span>支出日</span><span>支払期日</span><span>項目名</span><span>金額</span>' paymo/app/public/paymo-graph-detail-edit.js
@@ -147,6 +148,7 @@ jobs:
               && grep -Fq 'usageDateGroups' /tmp/paymo-graph-detail.js \
               && grep -Fq 'dateGrouped' /tmp/paymo-graph-detail-edit.js \
               && grep -Fq 'paymo-graph-detail-rotate-icon' /tmp/paymo-graph-detail.js \
+              && grep -Fq '#paymoGraphDetailToggleView{color:var(--accent,#B9F486)}' /tmp/paymo-graph-detail.js \
               && grep -Fq 'M11.8 25.4C15.2 14.1' /tmp/paymo-graph-detail.js \
               && grep -Fq 'M52.2 38.4C49 49.8' /tmp/paymo-graph-detail.js \
               && grep -Fq '<span>支出日</span><span>支払期日</span><span>項目名</span><span>金額</span>' /tmp/paymo-graph-detail-edit.js \
@@ -154,7 +156,7 @@ jobs:
               && grep -Fq 'overscroll-behavior-y:none' /tmp/paymo-mobile-ui.js \
               && grep -Fq 'overflow:hidden!important' /tmp/paymo-mobile-ui.js \
               && grep -Fq "const scroller = document.querySelector('.app')" /tmp/paymo-nav-scroll-top.js; then
-              echo "Paymo production verified: double clockwise arrow icon and four-column date detail."
+              echo "Paymo production verified: clockwise icon follows accent color."
               exit 0
             fi
             sleep 5
