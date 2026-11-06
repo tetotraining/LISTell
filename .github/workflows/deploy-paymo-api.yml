@@ -26,7 +26,7 @@ jobs:
       - name: Install Paymo dependencies
         working-directory: paymo/app
         run: npm install
-      - name: Resolve or create Paymo D1
+      - name: Resolve existing Paymo D1 without creating or replacing data
         working-directory: paymo/app
         shell: bash
         run: |
@@ -34,9 +34,8 @@ jobs:
           npx wrangler d1 list --json > /tmp/paymo-d1-list.json
           DB_ID="$(node -e "const fs=require('fs');const a=JSON.parse(fs.readFileSync('/tmp/paymo-d1-list.json','utf8'));const x=a.find(v=>v.name==='paymo');process.stdout.write(x?.uuid||x?.id||'')")"
           if [ -z "$DB_ID" ]; then
-            npx wrangler d1 create paymo --location apac
-            npx wrangler d1 list --json > /tmp/paymo-d1-list.json
-            DB_ID="$(node -e "const fs=require('fs');const a=JSON.parse(fs.readFileSync('/tmp/paymo-d1-list.json','utf8'));const x=a.find(v=>v.name==='paymo');process.stdout.write(x?.uuid||x?.id||'')")"
+            echo '::error::The existing Paymo D1 database was not found. No replacement database will be created.'
+            exit 1
           fi
           test -n "$DB_ID"
           node - "$DB_ID" <<'NODE'
@@ -47,7 +46,7 @@ jobs:
             main: 'worker/account-api-v2.js',
             compatibility_date: '2026-10-01',
             observability: { logs: { enabled: true, invocation_logs: true } },
-            triggers: { crons: ['0 * * * *'] },
+            triggers: { crons: ['* * * * *'] },
             d1_databases: [{
               binding: 'DB',
               database_name: 'paymo',
@@ -62,7 +61,7 @@ jobs:
         run: npx wrangler d1 migrations apply paymo --remote --config wrangler.paymo-api.jsonc
       - name: Deploy Paymo API Worker with notification cron
         working-directory: paymo/app
-        run: npx wrangler deploy --config wrangler.paymo-api.jsonc
+        run: npx wrangler deploy --config wrangler.paymo-api.jsonc --keep-vars
       - name: Ensure Paymo VAPID keys
         working-directory: paymo/app
         shell: bash
@@ -111,12 +110,16 @@ jobs:
             delete_status="$(curl -sS -X DELETE -o /tmp/paymo-api-delete.json -w '%{http_code}' https://paymo-api.teto-training.workers.dev/api/account || true)"
             notification_status="$(curl -sS -o /tmp/paymo-api-notification.json -w '%{http_code}' https://paymo-api.teto-training.workers.dev/api/notification-settings || true)"
             monthly_status="$(curl -sS -o /tmp/paymo-api-monthly.json -w '%{http_code}' https://paymo-api.teto-training.workers.dev/api/monthly-summary-settings || true)"
-            echo "attempt=$i me=$me_status delete=$delete_status notification=$notification_status monthly=$monthly_status"
-            if [ "$me_status" = "401" ] && [ "$delete_status" = "401" ] && [ "$notification_status" = "401" ] && [ "$monthly_status" = "401" ]; then
+            spending_status="$(curl -sS -D /tmp/paymo-api-spending-headers -o /tmp/paymo-api-spending.json -w '%{http_code}' 'https://teto-paymo.pages.dev/api/spending-threshold-settings' || true)"
+            echo "attempt=$i me=$me_status delete=$delete_status notification=$notification_status monthly=$monthly_status spending=$spending_status"
+            if [ "$me_status" = "401" ] && [ "$delete_status" = "401" ] && [ "$notification_status" = "401" ] && [ "$monthly_status" = "401" ] \
+              && [ "$spending_status" = "401" ] \
+              && grep -qi '^x-paymo-spending-threshold-api: 1' /tmp/paymo-api-spending-headers; then
               cat /tmp/paymo-api-me.json
               cat /tmp/paymo-api-delete.json
               cat /tmp/paymo-api-notification.json
               cat /tmp/paymo-api-monthly.json
+              echo 'Paymo spending threshold API deployed; existing authentication is required.'
               exit 0
             fi
             sleep 3
@@ -125,6 +128,7 @@ jobs:
           cat /tmp/paymo-api-delete.json || true
           cat /tmp/paymo-api-notification.json || true
           cat /tmp/paymo-api-monthly.json || true
+          cat /tmp/paymo-api-spending.json || true
           exit 1
 
-# Retrigger: monthly payment summary notification
+# Retrigger: spending threshold settings API, every-minute alert cron
